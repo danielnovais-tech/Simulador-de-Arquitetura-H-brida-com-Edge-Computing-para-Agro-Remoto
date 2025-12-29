@@ -13,6 +13,13 @@ from datetime import datetime
 class FarmSimulator:
     """Simulates a hybrid edge computing architecture for remote agriculture monitoring"""
     
+    # Alert thresholds
+    TEMP_HIGH_THRESHOLD = 30  # Celsius
+    HUMIDITY_LOW_THRESHOLD = 50  # Percentage
+    
+    # Simulation parameters
+    ITERATION_INTERVAL = 2  # seconds between iterations
+    
     def __init__(self):
         self.sensors = ["temperatura", "umidade", "luminosidade", "pH_solo"]
         self.edge_nodes = ["edge_node_1", "edge_node_2", "edge_node_3"]
@@ -43,9 +50,9 @@ class FarmSimulator:
         }
         
         # Check for alerts
-        if data["temperatura"] > 30:
+        if data["temperatura"] > self.TEMP_HIGH_THRESHOLD:
             processed_data["alerts"].append("Temperatura alta detectada")
-        if data["umidade"] < 50:
+        if data["umidade"] < self.HUMIDITY_LOW_THRESHOLD:
             processed_data["alerts"].append("Umidade baixa detectada")
             
         return processed_data
@@ -100,7 +107,7 @@ class FarmSimulator:
             print(f"  Cloud: {'✓ Enviado' if cloud_sent else '✗ Falha'}")
             
             # Simulate processing interval
-            time.sleep(2)
+            time.sleep(self.ITERATION_INTERVAL)
         
         total_time = time.time() - start_time
         print("\n" + "=" * 50)
