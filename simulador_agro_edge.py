@@ -15,6 +15,12 @@ from typing import Dict, List, Optional
 from datetime import datetime
 import hashlib
 
+# ============ ANSI COLOR CONSTANTS ============
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
 # ============ ENUMS E ESTRUTURAS ============
 
 class LinkStatus(Enum):
@@ -322,17 +328,20 @@ class AgroEdgeSimulator:
         
         print("\n📡 CONECTIVIDADE:")
         for link in self.network_links.values():
+            status_color = GREEN if link.status == LinkStatus.ONLINE else YELLOW if link.status == LinkStatus.DEGRADED else RED
             status_icon = "✅" if link.status == LinkStatus.ONLINE else "⚠️" if link.status == LinkStatus.DEGRADED else "❌"
-            print(f"  {status_icon} {link.name}: {link.status.value} | "
+            print(f"  {status_color}{status_icon}{RESET} {link.name}: {link.status.value} | "
                   f"Latência: {link.latency:.1f}ms | BW: {link.bandwidth:.1f}Mbps")
         
         print(f"\n🔄 Política SD-WAN: {self.sd_wan_policy}")
         
         print("\n🖥️  EDGE COMPUTING:")
         for node in self.edge_nodes.values():
+            k3s_color = GREEN if node.k3s_status else RED
+            mqtt_color = GREEN if node.mqtt_connected else RED
             k3s_icon = "✅" if node.k3s_status else "❌"
             mqtt_icon = "✅" if node.mqtt_connected else "❌"
-            print(f"  {k3s_icon}{mqtt_icon} {node.node_id} ({node.role.value}) | "
+            print(f"  {k3s_color}{k3s_icon}{RESET}{mqtt_color}{mqtt_icon}{RESET} {node.node_id} ({node.role.value}) | "
                   f"CPU: {node.cpu_usage:.1f}% | Mem: {node.mem_usage:.1f}%")
         
         print("\n📊 KPIs:")
