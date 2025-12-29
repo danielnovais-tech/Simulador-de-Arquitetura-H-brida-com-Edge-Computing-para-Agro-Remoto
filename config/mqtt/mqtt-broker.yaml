@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agro-edge
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mqtt-broker-config
+  namespace: agro-edge
+data:
+  mosquitto.conf: |
+    listener 1883
+    allow_anonymous false
+    password_file /etc/mosquitto/passwd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt-broker
+  namespace: agro-edge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mqtt-broker
+  template:
+    metadata:
+      labels:
+        app: mqtt-broker
+    spec:
+      containers:
+      - name: mosquitto
+        image: eclipse-mosquitto:2.0
+        ports:
+        - containerPort: 1883
+        volumeMounts:
+        - name: config
+          mountPath: /mosquitto/config
+      volumes:
+      - name: config
+        configMap:
+          name: mqtt-broker-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt-broker
+  namespace: agro-edge
+spec:
+  selector:
+    app: mqtt-broker
+  ports:
+  - port: 1883
+    targetPort: 1883
+  type: ClusterIP
