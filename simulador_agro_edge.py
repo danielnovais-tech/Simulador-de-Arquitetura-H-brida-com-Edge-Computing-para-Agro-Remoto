@@ -14,6 +14,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 from datetime import datetime
 import hashlib
+import argparse
 
 # ============ ENUMS E ESTRUTURAS ============
 
@@ -463,6 +464,11 @@ class NSE3000Simulator:
 
 def main():
     """Função principal de execução"""
+    parser = argparse.ArgumentParser(description="Simulador de Arquitetura Híbrida Agro Remoto")
+    parser.add_argument('--duration', type=int, default=300,
+                        help='Duração da simulação em segundos (padrão: 300)')
+    args = parser.parse_args()
+
     print("="*60)
     print("ARQUITETURA HÍBRIDA EDGE COMPUTING - AGRO REMOTO")
     print("="*60)
@@ -482,7 +488,7 @@ def main():
     
     # Executa simulação principal
     print("\n🚀 Iniciando simulação da arquitetura...")
-    farm_simulator.run_simulation(duration=120)  # 2 minutos para demonstração
+    farm_simulator.run_simulation(duration=args.duration)
     
     # Exporta configuração
     print("\n💾 Exportando configuração para deploy...")
