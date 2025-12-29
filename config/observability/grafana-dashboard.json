@@ -1,0 +1,216 @@
+{
+  "dashboard": {
+    "title": "Agro Edge Computing - KPI Dashboard",
+    "uid": "agro-edge-kpi",
+    "version": 1,
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Availability (%)",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "system_availability_percent"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 99.5, "color": "green"}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Network Latency (ms)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "network_latency_milliseconds"
+          }
+        ],
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
+        "yaxes": [
+          {"format": "ms", "min": 0, "max": 100}
+        ],
+        "alert": {
+          "name": "High Latency",
+          "conditions": [
+            {
+              "evaluator": {"params": [50], "type": "gt"},
+              "query": {"model": "A"}
+            }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Failover Time (s)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "failover_time_seconds"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 6},
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 5, "color": "red"}
+              ]
+            },
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Productivity Gain (%)",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "productivity_gain_percent"
+          }
+        ],
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 6},
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 30, "color": "green"}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Active Network Interface",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "active_connections{connection_type=\"network\"}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 6, "w": 8, "h": 4}
+      },
+      {
+        "id": 6,
+        "title": "Edge Nodes Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "edge_nodes_healthy / edge_nodes_total * 100"
+          }
+        ],
+        "gridPos": {"x": 8, "y": 6, "w": 8, "h": 4},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Running Workloads",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "edge_workloads_running"
+          }
+        ],
+        "gridPos": {"x": 16, "y": 6, "w": 8, "h": 4}
+      },
+      {
+        "id": 8,
+        "title": "Sensor Readings Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(sensor_readings_total[5m])"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 10, "w": 12, "h": 6}
+      },
+      {
+        "id": 9,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(errors_total[5m])"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 10, "w": 12, "h": 6}
+      },
+      {
+        "id": 10,
+        "title": "MQTT Connection Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "mqtt_connection_status"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 6, "h": 4},
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"value": 0, "text": "Disconnected"},
+              {"value": 1, "text": "Connected"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "MQTT Messages Published",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(mqtt_messages_published_total[5m])"
+          }
+        ],
+        "gridPos": {"x": 6, "y": 16, "w": 9, "h": 4}
+      },
+      {
+        "id": 12,
+        "title": "MQTT Messages Received",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(mqtt_messages_received_total[5m])"
+          }
+        ],
+        "gridPos": {"x": 15, "y": 16, "w": 9, "h": 4}
+      }
+    ],
+    "refresh": "5s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}
