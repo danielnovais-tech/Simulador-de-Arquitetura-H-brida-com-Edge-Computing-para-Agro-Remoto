@@ -192,11 +192,19 @@ class EdgeComputingSimulator:
         for sensor_id in self.sensors:
             sensor = self.nodes[sensor_id]
             # Encontrar edge node na mesma localização
+            connected = False
             for edge_id in self.edge_nodes:
                 edge = self.nodes[edge_id]
                 if edge.location == sensor.location:
                     sensor.connected_nodes.append(edge_id)
                     edge.connected_nodes.append(sensor_id)
+                    connected = True
+            
+            # Se não encontrar edge node na mesma localização, conectar ao mais próximo
+            if not connected and self.edge_nodes:
+                nearest_edge_id = self.edge_nodes[0]
+                sensor.connected_nodes.append(nearest_edge_id)
+                self.nodes[nearest_edge_id].connected_nodes.append(sensor_id)
         
         # Conectar edge nodes aos gateways
         for edge_id in self.edge_nodes:
@@ -214,6 +222,9 @@ class EdgeComputingSimulator:
     
     def generate_sensor_data(self) -> SensorData:
         """Gera dados de sensor simulados"""
+        if not self.sensors:
+            raise ValueError("Nenhum sensor disponível para gerar dados")
+        
         sensor_id = random.choice(self.sensors)
         sensor = self.nodes[sensor_id]
         
@@ -283,17 +294,23 @@ class EdgeComputingSimulator:
     
     def simulate_failure(self):
         """Simula falha de nó para testar resiliência"""
+        eligible_nodes = self.edge_nodes + self.gateway_nodes
+        if not eligible_nodes:
+            return
+            
         if random.random() < 0.1:  # 10% de chance de falha
-            node_id = random.choice(self.edge_nodes + self.gateway_nodes)
+            node_id = random.choice(eligible_nodes)
             node = self.nodes[node_id]
             if node.status == "active":
                 node.status = "failed"
                 print(f"⚠️  Falha simulada no nó {node_id}")
-                
-                # Auto-recuperação após alguns ciclos
-                if random.random() < 0.3:  # 30% de chance de recuperação
-                    node.status = "active"
-                    print(f"✅ Nó {node_id} recuperado")
+        
+        # Auto-recuperação de nós falhos (em ciclo separado)
+        for node_id in eligible_nodes:
+            node = self.nodes[node_id]
+            if node.status == "failed" and random.random() < 0.3:  # 30% de chance de recuperação
+                node.status = "active"
+                print(f"✅ Nó {node_id} recuperado")
     
     def run_simulation(self):
         """Executa a simulação completa"""
