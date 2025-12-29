@@ -211,7 +211,7 @@ class AgroEdgeSimulator:
     def finalize(self):
         """Finaliza a simulação e mostra resultados"""
         end_time = time.time()
-        total_time = int(end_time - self.start_time)
+        total_time = int(end_time - self.start_time) if self.start_time else 0
         
         print("\n" + "=" * 60)
         print("SIMULAÇÃO FINALIZADA")
@@ -232,7 +232,15 @@ class AgroEdgeSimulator:
         print(f"Total de dados processados nos Edge Nodes: {total_edge_data} bytes")
         print(f"Total de dados enviados ao Cloud: {cloud_status['total_data_received']} bytes")
         print(f"Total de leituras dos sensores: {total_readings}")
-        print(f"Eficiência do Edge Computing: {(total_edge_data / (total_edge_data + cloud_status['total_data_received']) * 100):.2f}%")
+        
+        # Calcula eficiência do Edge Computing (evita divisão por zero)
+        total_data = total_edge_data + cloud_status['total_data_received']
+        if total_data > 0:
+            efficiency = (total_edge_data / total_data) * 100
+            print(f"Eficiência do Edge Computing: {efficiency:.2f}%")
+        else:
+            print("Eficiência do Edge Computing: N/A (sem dados processados)")
+        
         print("\nSimulação concluída com sucesso!")
 
 
