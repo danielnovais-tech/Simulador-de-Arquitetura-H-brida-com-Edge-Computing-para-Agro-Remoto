@@ -11,7 +11,6 @@ Ambiente recomendado:
 
 import random
 import time
-from datetime import datetime
 from typing import Dict, List, Tuple
 
 
@@ -47,6 +46,8 @@ class Sensor:
 class EdgeNode:
     """Nó de processamento Edge"""
     
+    CACHE_MAX_SIZE = 100  # Tamanho máximo do cache local
+    
     def __init__(self, node_id: str):
         self.id = node_id
         self.sensores: List[Sensor] = []
@@ -72,24 +73,25 @@ class EdgeNode:
                     "valor": dado["valor"],
                     "timestamp": dado["timestamp"]
                 })
-        
-        # Cache local para resiliência
-        self.cache_local.extend(resultados)
-        if len(self.cache_local) > 100:
-            self.cache_local = self.cache_local[-100:]
             
         return resultados
     
-    def enviar_para_nuvem(self) -> bool:
-        """Simula envio de dados para nuvem"""
+    def enviar_para_nuvem(self, dados: List[Dict]) -> Tuple[bool, List[Dict]]:
+        """
+        Simula envio de dados para nuvem.
+        Retorna (sucesso, dados_a_enviar) onde dados_a_enviar inclui cache se online.
+        """
         # Simula 10% de chance de falha de rede
         if random.random() < 0.10:
             self.falhas_rede += 1
             self.online = False
-            return False
+            return False, []
         
         self.online = True
-        return True
+        # Se online, envia dados atuais + cache acumulado
+        dados_completos = self.cache_local + dados
+        self.cache_local = []  # Limpa cache após envio bem-sucedido
+        return True, dados_completos
 
 
 class CloudServer:
@@ -152,13 +154,20 @@ class Simulador:
             dados = node.processar_dados()
             
             # Tenta enviar para nuvem
-            if node.enviar_para_nuvem():
-                self.cloud.receber_dados(dados)
-                self.cloud.analisar_tendencias(dados)
+            sucesso, dados_a_enviar = node.enviar_para_nuvem(dados)
+            
+            if sucesso:
+                self.cloud.receber_dados(dados_a_enviar)
+                self.cloud.analisar_tendencias(dados_a_enviar)
                 
                 # Print detalhado de cada ciclo (comentado conforme requisito)
-                # print(f"  [Ciclo {self.ciclo_atual}] {node.id}: {len(dados)} dados enviados à nuvem")
+                # print(f"  [Ciclo {self.ciclo_atual}] {node.id}: {len(dados_a_enviar)} dados enviados à nuvem")
             else:
+                # Adiciona dados ao cache local para envio posterior
+                node.cache_local.extend(dados)
+                if len(node.cache_local) > node.CACHE_MAX_SIZE:
+                    node.cache_local = node.cache_local[-node.CACHE_MAX_SIZE:]
+                
                 # Print de falha (comentado conforme requisito)
                 # print(f"  [Ciclo {self.ciclo_atual}] {node.id}: Falha de rede - dados em cache local")
                 pass
