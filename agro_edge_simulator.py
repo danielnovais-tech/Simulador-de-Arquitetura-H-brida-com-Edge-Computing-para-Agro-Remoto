@@ -10,6 +10,12 @@ import random
 import sys
 from datetime import datetime
 
+# Alert thresholds for different sensor types
+TEMP_HIGH_THRESHOLD = 32.0
+TEMP_LOW_THRESHOLD = 18.0
+HUMIDITY_LOW_THRESHOLD = 40.0
+SOIL_LOW_THRESHOLD = 30.0
+
 
 class SensorNode:
     """Representa um nó sensor na rede agrícola"""
@@ -23,11 +29,11 @@ class SensorNode:
         """Simula coleta de dados do sensor"""
         self.data_points += 1
         if self.sensor_type == "temperatura":
-            return {"type": "temperatura", "value": round(random.uniform(15.0, 35.0), 2)}
+            return {"type": self.sensor_type, "value": round(random.uniform(15.0, 35.0), 2)}
         elif self.sensor_type == "umidade":
-            return {"type": "umidade", "value": round(random.uniform(30.0, 90.0), 2)}
+            return {"type": self.sensor_type, "value": round(random.uniform(30.0, 90.0), 2)}
         elif self.sensor_type == "solo":
-            return {"type": "solo", "value": round(random.uniform(20.0, 80.0), 2)}
+            return {"type": self.sensor_type, "value": round(random.uniform(20.0, 80.0), 2)}
         return {"type": "unknown", "value": 0}
 
 
@@ -44,13 +50,13 @@ class EdgeNode:
         self.processed_data += 1
         
         # Gera alertas baseado em condições críticas
-        if sensor_data["type"] == "temperatura" and (sensor_data["value"] > 32 or sensor_data["value"] < 18):
+        if sensor_data["type"] == "temperatura" and (sensor_data["value"] > TEMP_HIGH_THRESHOLD or sensor_data["value"] < TEMP_LOW_THRESHOLD):
             self.alerts_generated += 1
             return True
-        elif sensor_data["type"] == "umidade" and sensor_data["value"] < 40:
+        elif sensor_data["type"] == "umidade" and sensor_data["value"] < HUMIDITY_LOW_THRESHOLD:
             self.alerts_generated += 1
             return True
-        elif sensor_data["type"] == "solo" and sensor_data["value"] < 30:
+        elif sensor_data["type"] == "solo" and sensor_data["value"] < SOIL_LOW_THRESHOLD:
             self.alerts_generated += 1
             return True
         return False
@@ -82,6 +88,7 @@ class AgroEdgeSimulator:
         self.cloud = CloudNode()
         self.start_time = None
         self.end_time = None
+        self.last_cloud_sync_data_count = 0
         
         # Inicializa a topologia da rede
         self._initialize_network()
@@ -136,7 +143,9 @@ class AgroEdgeSimulator:
                 # Envia dados agregados para a nuvem periodicamente
                 if iteration % 10 == 0:
                     total_data = sum(sensor.data_points for sensor in self.sensors)
-                    self.cloud.receive_data(total_data)
+                    new_data = total_data - self.last_cloud_sync_data_count
+                    self.cloud.receive_data(new_data)
+                    self.last_cloud_sync_data_count = total_data
                 
                 # Exibe progresso a cada 10% do tempo
                 progress_percent = (elapsed / self.duration) * 100
