@@ -78,6 +78,9 @@ class EdgeComputing:
     
     def apply_nse3000_policies(self, telemetry: TelemetryData):
         """Simula aplicação de QoS e segurança NSE3000 por tipo de dado"""
+        # Determina VLAN e prioridade baseado no tipo de dado
+        vlan_name = "ot_network"  # VLAN para dados OT/agrícolas
+        
         if telemetry.data_type in ["temperature", "actuator"]:
             priority = "high"
         elif telemetry.data_type == "image":
@@ -85,8 +88,11 @@ class EdgeComputing:
         else:
             priority = "low"
         
+        vlan_info = self.nse3000.vlans.get(vlan_name, {})
+        vlan_id = vlan_info.get("id", "N/A")
+        
         print(f"[NSE3000-QoS] Aplicando prioridade '{priority}' para {telemetry.sensor_id} "
-              f"({telemetry.data_type}) via VLAN ot_network")
+              f"({telemetry.data_type}) via VLAN {vlan_name} (ID: {vlan_id})")
         
         self.nse3000.policies_applied += 1
     
@@ -149,6 +155,9 @@ class SDWANManager:
         else:
             selected_link = self.active_links[0]
             print(f"[SD-WAN] Link padrão {selected_link} selecionado")
+        
+        # Registra uso do link no NSE3000 para estatísticas
+        self.nse3000.policies_applied += 1
             
         return selected_link
 
