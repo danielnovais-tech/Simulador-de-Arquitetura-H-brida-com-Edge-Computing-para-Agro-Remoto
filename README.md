@@ -1,69 +1,27 @@
 # Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 
-Simula rede híbrida, edge computing resiliente e testes de validação com integração NSE3000 (Fortinet FortiGate) para QoS e segurança.
+Simula rede híbrida, edge computing resiliente e testes de validação com integração NSE3000 (Cambium Network Service Edge) para QoS, segurança e SD-WAN.
 
-## Características
-
-- **Integração NSE3000**: QoS e políticas de segurança aplicadas ao processamento de telemetria
-- **Edge Computing**: Processamento de inferência na borda com análise de dados de sensores agrícolas
-- **SD-WAN**: Seleção inteligente de links baseada em tipo de dado e criticidade
-- **Telemetria Multi-Tipo**: Suporte para temperatura, imagens, atuadores e dados genéricos
+## Características Principais
+- **Integração NSE3000**: Simulação de QoS por tipo de dado, segmentação VLAN (OT/IT), políticas zero-trust e logging
+- **Edge Computing**: Inferência local (ex.: análise de imagens para colheita) com cache resiliente
+- **SD-WAN Híbrido**: Seleção inteligente de links (Starlink primário, 4G failover, LoRa para baixa largura)
+- **Telemetria Multi-Tipo**: Suporte a temperatura, umidade, imagens, atuadores e dados críticos
+- **Resiliência**: Failover automático, chaos testing e recuperação de nós edge
+- **Saída Controlada**: Prints no loop principal comentados; dashboard a cada 5 ciclos + relatório final
 
 ## Arquitetura
-
-### NSE3000 Integration
-O NSE3000 (Fortinet FortiGate) está integrado ao fluxo principal de processamento:
-- Aplicação de políticas QoS por tipo de dado
-- Priorização via VLANs (ot_network para dados OT/agrícolas)
-- Estatísticas de políticas aplicadas
-
-### Priorização de Dados
-- **Alta prioridade**: temperature, actuator (dados críticos em tempo real)
-- **Média prioridade**: image (visão computacional tolerante a delay)
-- **Baixa prioridade**: outros dados (humidity, etc.)
-
-### SD-WAN
-- **4G**: Dados críticos (temperatura, atuadores)
-- **Satellite**: Imagens (maior banda, tolerante a latência)
+- **NSE3000 (simulado)**: Aplicação dinâmica de prioridade:
+  - Alta: temperatura, atuadores (dados SCADA-like)
+  - Média: imagens (visão computacional)
+  - Baixa: umidade, logs genéricos
+- **SD-WAN**: Starlink para banda larga (imagens), 4G para baixa latência (alertas críticos)
 
 ## Como Usar
+### Requisitos
+- Python 3.10–3.12
+- Sem dependências externas
 
+### Execução
 ```bash
-python3 simulator.py
-```
-
-## Saída Esperada
-
-O simulador demonstra:
-1. Configuração inicial do NSE3000
-2. Processamento de diferentes tipos de telemetria
-3. Aplicação de políticas QoS integradas
-4. Seleção de links SD-WAN
-5. Estatísticas finais de operação
-
-## Exemplo de Integração NSE3000
-
-```python
-def apply_nse3000_policies(self, telemetry: TelemetryData):
-    """Simula aplicação de QoS e segurança NSE3000 por tipo de dado"""
-    if telemetry.data_type in ["temperature", "actuator"]:
-        priority = "high"
-    elif telemetry.data_type == "image":
-        priority = "medium"
-    else:
-        priority = "low"
-    
-    print(f"[NSE3000-QoS] Aplicando prioridade '{priority}' para {telemetry.sensor_id} "
-          f"({telemetry.data_type}) via VLAN ot_network")
-```
-
-## Componentes
-
-- **TelemetryData**: Modelo de dados de telemetria
-- **NSE3000**: Simulador Fortinet FortiGate para QoS/segurança
-- **EdgeComputing**: Processamento de inferência com integração NSE3000
-- **SDWANManager**: Gerenciador de links SD-WAN
-
-## Licença
-
-Ver arquivo LICENSE
+python3 simulador.py
