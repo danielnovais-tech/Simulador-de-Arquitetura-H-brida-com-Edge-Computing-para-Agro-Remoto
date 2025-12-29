@@ -170,7 +170,6 @@ class Simulador:
                 
                 # Print de falha (comentado conforme requisito)
                 # print(f"  [Ciclo {self.ciclo_atual}] {node.id}: Falha de rede - dados em cache local")
-                pass
                 
     def executar(self):
         """Executa a simulação completa"""
