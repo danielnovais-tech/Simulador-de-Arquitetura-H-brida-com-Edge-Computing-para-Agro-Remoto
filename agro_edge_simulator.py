@@ -127,6 +127,7 @@ class HybridEdgeSimulator:
     edge_devices: List[EdgeDevice] = field(default_factory=list)
     cloud: Optional[CloudServer] = None
     total_data_points: int = 0
+    start_time: float = 0.0
     
     def __post_init__(self):
         """Inicializa dispositivos edge e servidor em nuvem"""
@@ -169,12 +170,12 @@ class HybridEdgeSimulator:
         print(f"  - Início: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("\n" + "=" * 80)
         
-        start_time = time.time()
+        self.start_time = time.time()
         iteration = 0
         
-        while (time.time() - start_time) < self.duration:
+        while (time.time() - self.start_time) < self.duration:
             iteration += 1
-            print(f"\n[Iteração {iteration}] Tempo: {int(time.time() - start_time)}s / {self.duration}s")
+            print(f"\n[Iteração {iteration}] Tempo: {int(time.time() - self.start_time)}s / {self.duration}s")
             
             # Coletar dados de sensores
             for sensor_id in range(self.num_sensors):
@@ -212,7 +213,7 @@ class HybridEdgeSimulator:
             time.sleep(2)
         
         # Relatório final
-        self.print_final_report(time.time() - start_time)
+        self.print_final_report(time.time() - self.start_time)
     
     def print_final_report(self, elapsed_time: float):
         """Imprime relatório final da simulação"""
@@ -301,7 +302,7 @@ Exemplos de uso:
         return 0
     except KeyboardInterrupt:
         print("\n\nSimulação interrompida pelo usuário.")
-        simulator.print_final_report(time.time() - time.time())
+        simulator.print_final_report(time.time() - simulator.start_time)
         return 0
     except Exception as e:
         print(f"\nErro durante a simulação: {e}")
