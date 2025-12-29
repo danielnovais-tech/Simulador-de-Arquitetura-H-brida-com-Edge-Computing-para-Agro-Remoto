@@ -14,6 +14,27 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 
+# Configurações de simulação
+EDGE_FAILURE_PROBABILITY = 0.1  # 10% de chance de falha em cada ciclo
+
+# Faixas de valores para sensores
+SENSOR_VALUE_RANGES = {
+    "TEMPERATURA": (15.0, 32.0),
+    "UMIDADE_SOLO": (25.0, 85.0),
+    "UMIDADE_AR": (40.0, 90.0),
+    "LUZ": (0.0, 100.0),
+    "PH_SOLO": (5.5, 7.5),
+    "PRECIPITACAO": (0.0, 50.0)
+}
+
+# Thresholds de alerta
+ALERT_THRESHOLDS = {
+    "TEMPERATURA_MIN": 10,
+    "TEMPERATURA_MAX": 35,
+    "UMIDADE_SOLO_MIN": 30
+}
+
+
 class SensorType(Enum):
     """Tipos de sensores agrícolas"""
     TEMPERATURA = "Temperatura"
@@ -66,9 +87,12 @@ class EdgeNode:
         
         # Análise simples no edge
         alert = False
-        if data.sensor_type == SensorType.TEMPERATURA and (data.value < 10 or data.value > 35):
+        if data.sensor_type == SensorType.TEMPERATURA and (
+            data.value < ALERT_THRESHOLDS["TEMPERATURA_MIN"] or 
+            data.value > ALERT_THRESHOLDS["TEMPERATURA_MAX"]
+        ):
             alert = True
-        elif data.sensor_type == SensorType.UMIDADE_SOLO and data.value < 30:
+        elif data.sensor_type == SensorType.UMIDADE_SOLO and data.value < ALERT_THRESHOLDS["UMIDADE_SOLO_MIN"]:
             alert = True
         
         return {
@@ -194,16 +218,7 @@ class HybridArchitectureSimulator:
         sensor_type = self.sensors[sensor_id]
         
         # Valores simulados baseados no tipo de sensor
-        value_ranges = {
-            SensorType.TEMPERATURA: (15.0, 32.0),
-            SensorType.UMIDADE_SOLO: (25.0, 85.0),
-            SensorType.UMIDADE_AR: (40.0, 90.0),
-            SensorType.LUZ: (0.0, 100.0),
-            SensorType.PH_SOLO: (5.5, 7.5),
-            SensorType.PRECIPITACAO: (0.0, 50.0)
-        }
-        
-        min_val, max_val = value_ranges[sensor_type]
+        min_val, max_val = SENSOR_VALUE_RANGES[sensor_type.name]
         value = random.uniform(min_val, max_val)
         
         # Localização aleatória na região
@@ -222,7 +237,7 @@ class HybridArchitectureSimulator:
     
     def simulate_edge_failure(self):
         """Simula falha aleatória em nó edge (resiliência)"""
-        if random.random() < 0.1:  # 10% de chance de falha
+        if random.random() < EDGE_FAILURE_PROBABILITY:
             node = random.choice(self.edge_nodes)
             node.is_online = False
             self.metrics["edge_failures"] += 1
