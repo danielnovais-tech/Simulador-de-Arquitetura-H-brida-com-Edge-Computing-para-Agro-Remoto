@@ -76,6 +76,21 @@ class EdgeComputing:
         
         return inference
     
+    def generate_telemetry(self, sensor_id: str, data_type: str, value: float, location: Optional[str] = None):
+        """Gera dados de telemetria e aplica políticas NSE3000"""
+        telemetry = TelemetryData(
+            sensor_id=sensor_id,
+            data_type=data_type,
+            value=value,
+            timestamp=datetime.now(),
+            location=location
+        )
+        
+        # Aplica políticas NSE3000 após criar o objeto
+        self.apply_nse3000_policies(telemetry)
+        
+        return telemetry
+    
     def apply_nse3000_policies(self, telemetry: TelemetryData):
         """Simula aplicação de QoS e segurança NSE3000 por tipo de dado"""
         # Determina VLAN e prioridade baseado no tipo de dado
