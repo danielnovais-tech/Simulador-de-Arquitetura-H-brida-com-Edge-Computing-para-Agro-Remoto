@@ -51,7 +51,6 @@ class EdgeComputingSimulator:
         
         # Atualiza KPI de tempo médio de inferência usando EMA
         # EMA = (valor_anterior * 0.9) + (novo_valor * 0.1)
-        self.kpis.setdefault('avg_inference_time', 0)
         self.kpis['avg_inference_time'] = (
             self.kpis.get('avg_inference_time', 0) * 0.9 + inference_time * 0.1
         )
@@ -97,7 +96,6 @@ class EdgeComputingSimulator:
               f"(latência rede: ~{network_latency*2:.1f} ms)")
         
         # Atualiza KPI de tempo médio na nuvem
-        self.kpis.setdefault('avg_cloud_time', 0)
         self.kpis['avg_cloud_time'] = (
             self.kpis.get('avg_cloud_time', 0) * 0.9 + total_time * 0.1
         )
