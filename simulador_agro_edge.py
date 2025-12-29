@@ -72,6 +72,22 @@ class AgroEdgeSimulator:
         }
         self.running = False
         self.sd_wan_policy = "starlink_primary"
+    
+    def _reset_after_chaos_test(self):
+        """Restaura estado após teste de caos"""
+        # Restaura links de rede
+        self.network_links['starlink'].status = LinkStatus.ONLINE
+        self.network_links['starlink'].latency = 45.0
+        self.sd_wan_policy = "starlink_primary"
+        
+        # Restaura nós edge
+        for node in self.edge_nodes.values():
+            node.k3s_status = True
+            node.mqtt_connected = True
+        
+        # Limpa fila de telemetria excessiva (mantém últimas 10 mensagens)
+        if len(self.telemetry_queue) > 10:
+            self.telemetry_queue = self.telemetry_queue[-10:]
         
     def _initialize_links(self) -> Dict[str, NetworkLink]:
         """Inicializa os links de rede"""
@@ -166,14 +182,15 @@ class AgroEdgeSimulator:
                 # Ativa failover automático
                 if node.role == NodeRole.ACTIVE:
                     self._activate_failover(node_id)
-            else:
+            elif not node.k3s_status or not node.mqtt_connected:
+                # Restaura nós previamente falhados
                 node.k3s_status = True
                 node.mqtt_connected = True
     
     def _activate_failover(self, failed_node_id: str):
         """Ativa failover para nó standby"""
         standby_nodes = [n for n in self.edge_nodes.values() 
-                        if n.node_id != failed_node_id and n.k3s_status]
+                        if n.node_id != failed_node_id and n.k3s_status and n.mqtt_connected]
         
         if standby_nodes:
             standby_nodes[0].role = NodeRole.ACTIVE
@@ -196,7 +213,7 @@ class AgroEdgeSimulator:
             
             # Cria hash para integridade
             data_str = f"{sensor_id}{value}{datetime.now().timestamp()}"
-            data_hash = hashlib.sha256(data_str.encode()).hexdigest()[:16]
+            data_hash = hashlib.sha256(data_str.encode()).hexdigest()
             
             telemetry = TelemetryData(
                 sensor_id=sensor_id,
@@ -207,13 +224,13 @@ class AgroEdgeSimulator:
                 data_hash=data_hash
             )
             
-            self.telemetry_queue.append(telemetry)
-            self.kpis['messages_delivered'] += 1
-            
             # Simula perda ocasional (1% de chance)
             if random.random() < 0.01:
                 self.kpis['messages_lost'] += 1
                 print(f"[Telemetry] 📉 Mensagem perdida do sensor {sensor_id}")
+            else:
+                self.telemetry_queue.append(telemetry)
+                self.kpis['messages_delivered'] += 1
     
     def process_edge_inference(self):
         """Simula inferência local com visão computacional"""
@@ -336,12 +353,13 @@ class AgroEdgeSimulator:
         start_time = time.time()
         
         # Thread para geração contínua de telemetria
+        telemetry_thread = None
         def telemetry_worker():
             while self.running:
                 self.generate_telemetry()
                 time.sleep(2)
         
-        telemetry_thread = threading.Thread(target=telemetry_worker, daemon=True)
+        telemetry_thread = threading.Thread(target=telemetry_worker)
         telemetry_thread.start()
         
         cycle = 0
@@ -365,11 +383,16 @@ class AgroEdgeSimulator:
                 test = random.choice(tests)
                 self.run_chaos_test(test)
                 # Restaura estado após teste
-                self.__init__(self.farm_name)
+                self._reset_after_chaos_test()
             
             time.sleep(3)
         
         self.running = False
+        
+        # Aguarda thread de telemetria finalizar
+        if telemetry_thread and telemetry_thread.is_alive():
+            telemetry_thread.join(timeout=5)
+        
         print("\n" + "="*60)
         print("SIMULAÇÃO CONCLUÍDA - RELATÓRIO FINAL:")
         print("="*60)
