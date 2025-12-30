@@ -9,7 +9,6 @@ incluindo sensores IoT, dispositivos edge, e processamento em nuvem.
 import argparse
 import time
 import random
-import json
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
