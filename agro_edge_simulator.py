@@ -7,7 +7,14 @@ Simula rede híbrida, edge computing resiliente e testes de validação
 import time
 import random
 import argparse
+import logging
 from datetime import datetime
+
+# Constantes de configuração
+STATUS_REPORT_INTERVAL_SECONDS = 30
+SAMPLING_INTERVAL_SECONDS = 1
+CLOUD_FORWARD_RATIO = 0.2  # 20% dos dados enviados ao cloud
+MAX_DURATION_SECONDS = 86400  # 24 horas
 
 
 class EdgeNode:
@@ -25,8 +32,18 @@ class EdgeNode:
         """Processa dados no nó edge"""
         if self.active:
             self.data_processed += data_size
-            self.cpu_usage = min(100.0, random.uniform(20, 80))
-            self.memory_usage = min(100.0, random.uniform(30, 70))
+            # Atualiza uso de CPU e memória com base na carga e no histórico
+            load_factor = min(1.0, max(0.0, data_size / 1000.0))
+            
+            # CPU tende a aumentar com a carga atual, variando gradualmente
+            cpu_delta = load_factor * 10.0 + random.uniform(-2.0, 4.0)
+            self.cpu_usage = max(0.0, min(100.0, self.cpu_usage + cpu_delta))
+            
+            # Memória tem inércia maior: leve decaimento + aumento com a carga
+            memory_base = self.memory_usage * 0.95
+            memory_delta = load_factor * 5.0 + random.uniform(-1.0, 3.0)
+            self.memory_usage = max(0.0, min(100.0, memory_base + memory_delta))
+            
             return True
         return False
     
@@ -94,13 +111,37 @@ class IoTSensor:
 class AgroEdgeSimulator:
     """Simulador principal da arquitetura híbrida"""
     
-    def __init__(self, duration=300):
+    def __init__(self, duration=300, num_edges=3, sensors_per_edge=3, cloud_forward_ratio=CLOUD_FORWARD_RATIO):
         self.duration = duration
+        self.num_edges = num_edges
+        self.sensors_per_edge = sensors_per_edge
+        self.cloud_forward_ratio = cloud_forward_ratio
         self.edge_nodes = []
         self.cloud_server = CloudServer()
         self.iot_sensors = []
+        self.sensor_to_edge_map = {}  # Mapeamento sensor -> edge node
         self.start_time = None
         self.running = False
+        
+    def _estimate_data_size(self, sensor):
+        """
+        Estima o tamanho do payload (em bytes) de uma leitura de sensor,
+        levando em conta o tipo de sensor.
+        """
+        sensor_type = sensor.sensor_type
+        
+        if sensor_type == 'temperature':
+            # Leituras de temperatura tendem a ser simples (valor + timestamp)
+            return random.randint(80, 180)
+        elif sensor_type == 'humidity':
+            # Um pouco mais de metadados que temperatura
+            return random.randint(120, 220)
+        elif sensor_type == 'soil_moisture':
+            # Pode incluir múltiplos parâmetros (umidade, condutividade etc.)
+            return random.randint(180, 320)
+        
+        # Fallback para tipos desconhecidos
+        return random.randint(100, 500)
         
     def setup(self):
         """Configura a infraestrutura da simulação"""
@@ -109,41 +150,59 @@ class AgroEdgeSimulator:
         print("Para Agricultura Remota")
         print("=" * 60)
         print(f"\nDuração da simulação: {self.duration} segundos (~{self.duration//60} minutos)")
+        print(f"Nós Edge: {self.num_edges}")
+        print(f"Sensores por nó: {self.sensors_per_edge}")
+        print(f"Taxa de envio ao Cloud: {self.cloud_forward_ratio*100:.0f}%")
         print("\nConfigurando infraestrutura...")
         
         # Criar nós edge
-        locations = ['Fazenda Norte', 'Fazenda Sul', 'Fazenda Leste']
-        for i, location in enumerate(locations, 1):
-            node = EdgeNode(f"EDGE-{i:02d}", location)
+        locations = ['Fazenda Norte', 'Fazenda Sul', 'Fazenda Leste', 'Fazenda Oeste', 'Fazenda Centro']
+        for i in range(self.num_edges):
+            location = locations[i % len(locations)]
+            node = EdgeNode(f"EDGE-{i+1:02d}", location)
             self.edge_nodes.append(node)
+            logging.info(f"Nó Edge {node.node_id} criado em {location}")
             print(f"  ✓ Nó Edge {node.node_id} criado em {location}")
         
-        # Criar sensores IoT
+        # Criar sensores IoT e mapear para edge nodes
         sensor_types = ['temperature', 'humidity', 'soil_moisture']
         sensor_count = 0
-        for node in self.edge_nodes:
-            for sensor_type in sensor_types:
+        for edge_idx, edge_node in enumerate(self.edge_nodes):
+            for _ in range(self.sensors_per_edge):
                 sensor_count += 1
+                sensor_type = sensor_types[sensor_count % len(sensor_types)]
                 sensor = IoTSensor(f"SENSOR-{sensor_count:03d}", sensor_type)
                 self.iot_sensors.append(sensor)
+                # Mapeia sensor ao edge node baseado em proximidade geográfica
+                self.sensor_to_edge_map[sensor.sensor_id] = edge_node
         
         print(f"  ✓ {len(self.iot_sensors)} sensores IoT criados")
         print(f"  ✓ Servidor Cloud configurado")
         print("\nInfraestrutura pronta!")
         
-    def simulate_cycle(self, cycle_num):
+    def simulate_cycle(self):
         """Executa um ciclo de simulação"""
         # Sensores geram leituras
         for sensor in self.iot_sensors:
-            reading = sensor.generate_reading()
-            data_size = random.randint(100, 500)  # bytes
+            sensor.generate_reading()
+            data_size = self._estimate_data_size(sensor)
             
-            # Dados são processados no edge node mais próximo
-            edge_node = random.choice(self.edge_nodes)
-            if edge_node.process_data(data_size):
-                # Ocasionalmente, dados críticos são enviados ao cloud
-                if random.random() < 0.3:  # 30% chance
+            # Obtém edge node baseado em proximidade geográfica
+            edge_node = self.sensor_to_edge_map[sensor.sensor_id]
+            
+            # Decide se dados vão para edge ou cloud (não ambos)
+            if random.random() < self.cloud_forward_ratio:
+                # Dados críticos são enviados diretamente ao cloud
+                self.cloud_server.receive_data(data_size)
+                logging.debug(f"Sensor {sensor.sensor_id} enviou dados ao cloud")
+            else:
+                # Dados são processados localmente no edge
+                if edge_node.process_data(data_size):
+                    logging.debug(f"Sensor {sensor.sensor_id} processou dados no {edge_node.node_id}")
+                else:
+                    # Fallback: se edge falhar, envia ao cloud
                     self.cloud_server.receive_data(data_size)
+                    logging.warning(f"Edge node {edge_node.node_id} inativo, dados enviados ao cloud")
         
     def print_status(self, elapsed_time):
         """Imprime status atual da simulação"""
@@ -178,7 +237,6 @@ class AgroEdgeSimulator:
         
         self.start_time = time.time()
         self.running = True
-        cycle_num = 0
         last_status_time = 0
         
         try:
@@ -191,16 +249,15 @@ class AgroEdgeSimulator:
                     break
                 
                 # Executa ciclo de simulação
-                cycle_num += 1
-                self.simulate_cycle(cycle_num)
+                self.simulate_cycle()
                 
-                # Imprime status a cada 30 segundos
-                if elapsed_time - last_status_time >= 30:
+                # Imprime status a cada intervalo definido
+                if elapsed_time - last_status_time >= STATUS_REPORT_INTERVAL_SECONDS:
                     self.print_status(elapsed_time)
                     last_status_time = elapsed_time
                 
                 # Aguarda antes do próximo ciclo (simula taxa de amostragem)
-                time.sleep(1)
+                time.sleep(SAMPLING_INTERVAL_SECONDS)
                 
         except KeyboardInterrupt:
             print("\n\nSimulação interrompida pelo usuário!")
@@ -255,16 +312,63 @@ def main():
         default=300,
         help='Duração da simulação em segundos (padrão: 300 segundos ≈ 5 minutos)'
     )
+    parser.add_argument(
+        '--num-edges',
+        type=int,
+        default=3,
+        help='Número de nós edge (padrão: 3)'
+    )
+    parser.add_argument(
+        '--sensors-per-edge',
+        type=int,
+        default=3,
+        help='Sensores IoT por nó edge (padrão: 3)'
+    )
+    parser.add_argument(
+        '--cloud-forward-ratio',
+        type=float,
+        default=CLOUD_FORWARD_RATIO,
+        help=f'Fração de dados enviados ao cloud, entre 0 e 1 (padrão: {CLOUD_FORWARD_RATIO})'
+    )
+    parser.add_argument(
+        '--log-level',
+        type=str,
+        default='WARNING',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+        help='Nível de log (padrão: WARNING)'
+    )
     
     args = parser.parse_args()
     
-    # Valida duração
-    if args.duration <= 0:
-        print("Erro: A duração deve ser maior que 0")
+    # Configura logging
+    logging.basicConfig(
+        level=getattr(logging, args.log_level),
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    
+    # Valida parâmetros
+    try:
+        if args.duration <= 0:
+            raise ValueError("A duração deve ser maior que 0")
+        if args.duration > MAX_DURATION_SECONDS:
+            raise ValueError(f"A duração não pode exceder {MAX_DURATION_SECONDS} segundos (24 horas)")
+        if args.num_edges <= 0:
+            raise ValueError("O número de nós edge deve ser maior que 0")
+        if args.sensors_per_edge <= 0:
+            raise ValueError("O número de sensores por edge deve ser maior que 0")
+        if not 0 <= args.cloud_forward_ratio <= 1:
+            raise ValueError("A taxa de envio ao cloud deve estar entre 0 e 1")
+    except ValueError as e:
+        print(f"Erro de validação: {e}")
         return 1
     
     # Cria e executa simulador
-    simulator = AgroEdgeSimulator(duration=args.duration)
+    simulator = AgroEdgeSimulator(
+        duration=args.duration,
+        num_edges=args.num_edges,
+        sensors_per_edge=args.sensors_per_edge,
+        cloud_forward_ratio=args.cloud_forward_ratio
+    )
     simulator.run()
     
     return 0
