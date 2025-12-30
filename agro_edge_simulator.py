@@ -3,7 +3,7 @@
 Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 (Hybrid Architecture Simulator with Edge Computing for Remote Agriculture)
 
-Simula rede híbrida, edge computing resiliente e testes de validação
+Simula rede híbrida e edge computing resiliente
 """
 
 import random
@@ -16,6 +16,8 @@ from enum import Enum
 
 # Configurações de simulação
 EDGE_FAILURE_PROBABILITY = 0.1  # 10% de chance de falha em cada ciclo
+EDGE_RECOVERY_DELAY_CYCLES = 1  # Ciclos antes de recuperar nó com falha
+CYCLE_SLEEP_TIME = 0.5  # Segundos de pausa entre ciclos (para visualização)
 
 # Faixas de valores para sensores
 SENSOR_VALUE_RANGES = {
@@ -70,8 +72,6 @@ class EdgeNode:
     """Nó de Edge Computing"""
     node_id: str
     location: Tuple[float, float]
-    processing_capacity: float  # MIPS
-    storage_capacity: float  # MB
     connected_sensors: List[str] = field(default_factory=list)
     data_buffer: List[SensorData] = field(default_factory=list)
     processed_data: int = 0
@@ -85,15 +85,19 @@ class EdgeNode:
         self.data_buffer.append(data)
         self.processed_data += 1
         
-        # Análise simples no edge
+        # Análise simples no edge com detecção de alertas
         alert = False
-        if data.sensor_type == SensorType.TEMPERATURA and (
-            data.value < ALERT_THRESHOLDS["TEMPERATURA_MIN"] or 
-            data.value > ALERT_THRESHOLDS["TEMPERATURA_MAX"]
-        ):
-            alert = True
-        elif data.sensor_type == SensorType.UMIDADE_SOLO and data.value < ALERT_THRESHOLDS["UMIDADE_SOLO_MIN"]:
-            alert = True
+        temp_min = ALERT_THRESHOLDS.get("TEMPERATURA_MIN")
+        temp_max = ALERT_THRESHOLDS.get("TEMPERATURA_MAX")
+        soil_moisture_min = ALERT_THRESHOLDS.get("UMIDADE_SOLO_MIN")
+        
+        if data.sensor_type == SensorType.TEMPERATURA:
+            if ((temp_min is not None and data.value < temp_min) or
+                (temp_max is not None and data.value > temp_max)):
+                alert = True
+        elif data.sensor_type == SensorType.UMIDADE_SOLO:
+            if soil_moisture_min is not None and data.value < soil_moisture_min:
+                alert = True
         
         return {
             "status": "processed",
@@ -114,8 +118,6 @@ class EdgeNode:
 class CloudServer:
     """Servidor na nuvem"""
     server_id: str
-    processing_capacity: float
-    storage_capacity: float
     total_data_received: int = 0
     analytics_results: List[Dict] = field(default_factory=list)
     
@@ -159,6 +161,8 @@ class HybridArchitectureSimulator:
         self.edge_nodes: List[EdgeNode] = []
         self.cloud_server: CloudServer = None
         self.sensors: Dict[str, SensorType] = {}
+        self.sensor_locations: Dict[str, Tuple[float, float]] = {}  # Localizações fixas dos sensores
+        self.failed_nodes: Dict[str, int] = {}  # node_id -> ciclo de falha
         self.simulation_time: int = 0
         self.metrics = {
             "total_data_generated": 0,
@@ -176,9 +180,7 @@ class HybridArchitectureSimulator:
         
         # Criar servidor na nuvem
         self.cloud_server = CloudServer(
-            server_id="CLOUD-01",
-            processing_capacity=10000.0,
-            storage_capacity=100000.0
+            server_id="CLOUD-01"
         )
         print(f"✓ Servidor Cloud criado: {self.cloud_server.server_id}")
         
@@ -192,19 +194,23 @@ class HybridArchitectureSimulator:
         for i, location in enumerate(edge_locations, 1):
             node = EdgeNode(
                 node_id=f"EDGE-{i:02d}",
-                location=location,
-                processing_capacity=1000.0,
-                storage_capacity=5000.0
+                location=location
             )
             self.edge_nodes.append(node)
             print(f"✓ Nó Edge criado: {node.node_id} @ {location}")
         
-        # Criar sensores
+        # Criar sensores com localizações fixas
         sensor_types = list(SensorType)
         for i in range(15):
             sensor_id = f"SENSOR-{i+1:03d}"
             sensor_type = sensor_types[i % len(sensor_types)]
             self.sensors[sensor_id] = sensor_type
+            
+            # Atribuir localização fixa ao sensor
+            self.sensor_locations[sensor_id] = (
+                random.uniform(-25.0, -15.0),
+                random.uniform(-50.0, -40.0)
+            )
             
             # Distribuir sensores entre nós edge
             edge_node = self.edge_nodes[i % len(self.edge_nodes)]
@@ -218,14 +224,14 @@ class HybridArchitectureSimulator:
         sensor_type = self.sensors[sensor_id]
         
         # Valores simulados baseados no tipo de sensor
+        if sensor_type.name not in SENSOR_VALUE_RANGES:
+            raise ValueError(f"Sensor type {sensor_type.name} não tem faixa de valores definida em SENSOR_VALUE_RANGES")
+        
         min_val, max_val = SENSOR_VALUE_RANGES[sensor_type.name]
         value = random.uniform(min_val, max_val)
         
-        # Localização aleatória na região
-        location = (
-            random.uniform(-25.0, -15.0),
-            random.uniform(-50.0, -40.0)
-        )
+        # Usar localização fixa do sensor
+        location = self.sensor_locations[sensor_id]
         
         return SensorData(
             sensor_id=sensor_id,
@@ -238,18 +244,33 @@ class HybridArchitectureSimulator:
     def simulate_edge_failure(self):
         """Simula falha aleatória em nó edge (resiliência)"""
         if random.random() < EDGE_FAILURE_PROBABILITY:
-            node = random.choice(self.edge_nodes)
+            # Considerar apenas nós que estão atualmente online
+            online_nodes = [node for node in self.edge_nodes if node.is_online]
+            if not online_nodes:
+                return None
+            
+            node = random.choice(online_nodes)
             node.is_online = False
+            self.failed_nodes[node.node_id] = self.simulation_time
             self.metrics["edge_failures"] += 1
             return node.node_id
         return None
     
     def recover_edge_node(self, node_id: str):
-        """Recupera nó edge (resiliência)"""
+        """Recupera nó edge (resiliência)
+        
+        Retorna True apenas quando o nó estava offline e foi efetivamente
+        recuperado. Se o nó já estiver online ou não for encontrado, retorna False.
+        """
         for node in self.edge_nodes:
             if node.node_id == node_id:
-                node.is_online = True
-                return True
+                if not node.is_online:
+                    node.is_online = True
+                    if node_id in self.failed_nodes:
+                        del self.failed_nodes[node_id]
+                    return True
+                # Nó já está online; nenhuma recuperação necessária
+                return False
         return False
     
     def run_simulation_cycle(self):
@@ -270,6 +291,7 @@ class HybridArchitectureSimulator:
         # Processar no edge
         processed_at_edge = []
         alerts = []
+        orphaned_sensors = []
         
         for reading in sensor_readings:
             # Encontrar nó edge responsável
@@ -287,8 +309,13 @@ class HybridArchitectureSimulator:
                     if result["alert"]:
                         alerts.append(result)
                         self.metrics["alerts_generated"] += 1
+            else:
+                # Sensor órfão (não conectado a nenhum nó edge)
+                orphaned_sensors.append(reading.sensor_id)
         
         print(f"⚡ Edge processou {len(processed_at_edge)} registros")
+        if orphaned_sensors:
+            print(f"⚠️  {len(orphaned_sensors)} sensores órfãos detectados: {', '.join(set(orphaned_sensors))}")
         if alerts:
             print(f"⚠️  {len(alerts)} alertas gerados no Edge:")
             for alert in alerts[:3]:  # Mostrar apenas 3 primeiros
@@ -298,9 +325,16 @@ class HybridArchitectureSimulator:
         failed_node = self.simulate_edge_failure()
         if failed_node:
             print(f"❌ Nó {failed_node} falhou! (teste de resiliência)")
-            # Recuperar imediatamente
-            self.recover_edge_node(failed_node)
-            print(f"✓ Nó {failed_node} recuperado (sistema resiliente)")
+        
+        # Recuperar nós com falha após EDGE_RECOVERY_DELAY_CYCLES
+        nodes_to_recover = []
+        for node_id, failure_cycle in list(self.failed_nodes.items()):
+            if self.simulation_time - failure_cycle >= EDGE_RECOVERY_DELAY_CYCLES:
+                nodes_to_recover.append(node_id)
+        
+        for node_id in nodes_to_recover:
+            if self.recover_edge_node(node_id):
+                print(f"✓ Nó {node_id} recuperado após {EDGE_RECOVERY_DELAY_CYCLES} ciclo(s) (sistema resiliente)")
         
         # Sincronizar com cloud
         all_data_for_cloud = []
@@ -357,7 +391,7 @@ class HybridArchitectureSimulator:
         print("✓ SIMULAÇÃO CONCLUÍDA COM SUCESSO")
         print(f"{'=' * 70}\n")
     
-    def run(self, cycles: int = 3):
+    def run(self, cycles: int):
         """Executa a simulação completa"""
         print("\n" + "=" * 70)
         print("SIMULADOR DE ARQUITETURA HÍBRIDA COM EDGE COMPUTING")
@@ -370,7 +404,7 @@ class HybridArchitectureSimulator:
         # Executar ciclos de simulação
         for _ in range(cycles):
             self.run_simulation_cycle()
-            time.sleep(0.5)  # Pausa para visualização
+            time.sleep(CYCLE_SLEEP_TIME)  # Pausa configurável para visualização
         
         # Sumário final
         self.print_summary()

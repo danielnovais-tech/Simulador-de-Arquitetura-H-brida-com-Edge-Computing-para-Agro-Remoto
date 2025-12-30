@@ -27,7 +27,7 @@ python3 agro_edge_simulator.py
 
 ## Requisitos
 
-- Python 3.6 ou superior
+- Python 3.8 ou superior
 - Bibliotecas padrão do Python (sem dependências externas)
 
 ## Arquitetura
