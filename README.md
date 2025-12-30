@@ -1,4 +1,3 @@
-
 # Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -9,6 +8,7 @@ Simulador completo de uma arquitetura híbrida de conectividade e edge computing
 O objetivo é validar resiliência, baixa latência e ganho de produtividade (+30% simulado) em cenários "fora do mapa", onde fibra não chega.
 
 ## Características Principais
+
 - **Integração NSE3000**: Simulação de QoS por tipo de dado, segmentação VLAN (OT/IT), políticas zero-trust e logging
 - **Edge Computing**: Inferência local (ex.: análise de imagens para colheita) com cache resiliente
 - **SD-WAN Híbrido**: Seleção inteligente de links (Starlink primário, 4G failover, LoRa para baixa largura)
@@ -22,4 +22,13 @@ O objetivo é validar resiliência, baixa latência e ganho de produtividade (+3
 - Testes de caos: falha de link, falha de nó, pico de tráfego
 - Exportação JSON pronta para mapeamento de deploy real
 
-## Arquitetura Simulada
+## Requisitos
+
+- Python 3.10 ou superior
+
+## Uso
+
+### Execução básica (duração padrão de 120 segundos)
+
+```bash
+python3 farm_simulator.py
