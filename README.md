@@ -2,7 +2,8 @@
 
 **Complete resilient architecture simulation with network failover, edge orchestration, telemetry, chaos testing, and observability**  
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)  
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)  
+[![CI](https://github.com/danielnovais-tech/Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto/actions/workflows/ci.yml/badge.svg)](https://github.com/danielnovais-tech/Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto/actions/workflows/ci.yml)
 
 This simulator models a hybrid connectivity and edge computing architecture designed for **remote farms** in LATAM, combining **Starlink** as primary link, 4G failover, LoRa mesh, local processing with edge inference, and simulated integration of **Cambium NSE3000** (Network Service Edge) for QoS, VLAN segmentation, zero-trust security, and secure backhaul.  
 
@@ -116,3 +117,43 @@ cd Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto
 pip install -r requirements.txt
 # Or install in development mode
 pip install -e .
+```
+
+## 🧪 Testing
+This project includes a comprehensive test suite with >80% code coverage to ensure code quality and prevent regressions.
+
+### Running Tests Locally
+
+Run all tests with verbose output:
+```bash
+pytest tests/ -v
+```
+
+Run tests for the main simulator:
+```bash
+pytest tests/test_agro_edge.py -v
+```
+
+### Code Coverage
+
+Check code coverage:
+```bash
+pytest tests/ --cov=agro_edge_simulator --cov-report=html
+```
+
+This will generate an HTML coverage report in the `htmlcov/` directory. Open `htmlcov/index.html` in your browser to view detailed coverage information.
+
+View coverage in terminal:
+```bash
+pytest tests/ --cov=agro_edge_simulator --cov-report=term-missing
+```
+
+### CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration:
+- **Triggers**: Automatic on push to `main` branch and pull requests
+- **Python versions tested**: 3.9, 3.10, 3.11
+- **Test requirements**: All tests must pass before merge
+- **Coverage target**: >80% code coverage
+
+Check the CI status badge at the top of this README or visit the [Actions tab](https://github.com/danielnovais-tech/Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto/actions) to see test results.
