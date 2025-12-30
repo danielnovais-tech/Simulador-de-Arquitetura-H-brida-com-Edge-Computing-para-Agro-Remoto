@@ -31,10 +31,6 @@ jobs:
       run: |
         pytest tests/test_agro_edge.py -v --cov=agro_edge_simulator --cov-report=term-missing --cov-report=html
     
-    - name: Display coverage summary
-      run: |
-        pytest tests/test_agro_edge.py --cov=agro_edge_simulator --cov-report=term
-    
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
       if: matrix.python-version == '3.11'

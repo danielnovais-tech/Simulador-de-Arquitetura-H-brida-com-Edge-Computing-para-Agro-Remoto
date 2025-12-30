@@ -4,13 +4,15 @@ Tests sensor data generation, edge processing, cloud processing, CLI, and integr
 """
 import pytest
 import sys
+import os
 import argparse
 import time
 from unittest.mock import patch, MagicMock
 from io import StringIO
 
-# Import the main simulator module
-sys.path.insert(0, '..')
+# Add the parent directory to sys.path to import agro_edge_simulator
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from agro_edge_simulator import (
     SensorNode,
     EdgeNode,
@@ -359,7 +361,8 @@ class TestCLI:
                 with patch('agro_edge_simulator.AgroEdgeSimulator') as mock_sim:
                     try:
                         main()
-                    except:
+                    except (SystemExit, Exception):
+                        # Expected to exit after running
                         pass
                     
                     # Verify simulator was created with correct duration
@@ -390,16 +393,12 @@ class TestCLI:
             with patch('sys.argv', ['agro_edge_simulator.py', '--duration', duration]):
                 with patch.object(AgroEdgeSimulator, 'run_simulation'):
                     with patch('builtins.print'):
+                        # Should not raise SystemExit with non-zero code
                         try:
                             main()
-                            # If we get here without SystemExit, the duration was accepted
-                            success = True
                         except SystemExit as e:
-                            # Exit code 0 is also success
-                            success = (e.code == 0)
-                        
-                        # We just need to verify no error was raised
-                        assert True
+                            # Only exit code 0 is acceptable
+                            assert e.code == 0 or e.code is None, f"Duration {duration} was rejected with exit code {e.code}"
 
 
 # ============================================================================
