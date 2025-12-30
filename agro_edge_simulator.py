@@ -233,8 +233,20 @@ class HybridEdgeSimulator:
             print(f"    * Bateria restante: {device.battery_level:.1f}%")
             print(f"    * Status: {'Online' if device.is_online else 'Offline'}")
         
-        print(f"\nTaxa de Processamento: {self.total_data_points / elapsed_time:.2f} dados/segundo")
-        print(f"Eficiência Edge: {sum(d.processed_count for d in self.edge_devices) / self.total_data_points * 100:.1f}%")
+        if elapsed_time > 0:
+            processing_rate = self.total_data_points / elapsed_time
+        else:
+            processing_rate = 0.0
+
+        if self.total_data_points > 0:
+            edge_efficiency = (
+                sum(d.processed_count for d in self.edge_devices) / self.total_data_points * 100
+            )
+        else:
+            edge_efficiency = 0.0
+
+        print(f"\nTaxa de Processamento: {processing_rate:.2f} dados/segundo")
+        print(f"Eficiência Edge: {edge_efficiency:.1f}%")
         print("\n" + "=" * 80)
         print("Simulação concluída com sucesso!")
         print("=" * 80)
