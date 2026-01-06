@@ -25,6 +25,7 @@ class EdgeNode:
     cpu_cores: int
     memory_gb: float
     storage_gb: float
+    power_watts: float = 0.0
     is_healthy: bool = True
     workloads: List[str] = None
     
@@ -137,7 +138,8 @@ class K3sEdgeManager:
                     "name": node.name,
                     "healthy": node.is_healthy,
                     "workloads": len(node.workloads),
-                    "location": node.location
+                    "location": node.location,
+                    "power_watts": node.power_watts
                 }
                 for node_id, node in self.nodes.items()
             }
