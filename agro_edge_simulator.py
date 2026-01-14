@@ -501,8 +501,15 @@ def main():
     simulator.export_results()
     
     print("\n✅ Simulação concluída com sucesso!")
-Simula rede híbrida, edge computing resiliente e testes de validação
-"""
+
+
+if __name__ == "__main__":
+    main()
+
+
+# =============================================================================
+# Alternative implementation with command-line arguments
+# =============================================================================
 
 import argparse
 import time
@@ -718,7 +725,7 @@ class AgroEdgeSimulator:
         print("=" * 80)
 
 
-def main():
+def main_alternative():
     """Função principal"""
     parser = argparse.ArgumentParser(
         description="Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto",
@@ -749,5 +756,6 @@ Exemplos de uso:
     simulator.run_simulation()
 
 
-if __name__ == "__main__":
-    main()
+# Note: To use the alternative implementation with command-line arguments,
+# uncomment the line below and comment out the main() call above
+# main_alternative()
