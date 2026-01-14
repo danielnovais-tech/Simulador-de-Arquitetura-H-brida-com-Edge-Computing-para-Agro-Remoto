@@ -197,6 +197,7 @@ class EdgeComputingSimulator:
                     sensor.connected_nodes.append(edge_id)
                     edge.connected_nodes.append(sensor_id)
                     connected = True
+                    break
             
             # Se não encontrar edge node na mesma localização, conectar ao mais próximo
             if not connected and self.edge_nodes:
