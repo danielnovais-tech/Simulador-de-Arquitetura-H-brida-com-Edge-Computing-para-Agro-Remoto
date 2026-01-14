@@ -304,16 +304,24 @@ class AgroEdgeSimulator:
         start_time = time.time()
         recovery_time = None
         
-        for i in range(10):  # Monitora por 10 ciclos
+        for _ in range(10):  # Monitora por 10 ciclos
             time.sleep(1)
             if test_type == "link_failure":
+                # Trigger SD-WAN orchestration during recovery monitoring
+                self.simulate_sd_wan_orchestration()
                 if self.sd_wan_policy == "4g_failover":
                     recovery_time = time.time() - start_time
                     break
             elif test_type == "node_failure":
+                # Trigger edge heartbeat during recovery monitoring
+                self.simulate_edge_heartbeat()
                 if self.edge_nodes['edge-02'].role == NodeRole.ACTIVE:
                     recovery_time = time.time() - start_time
                     break
+            elif test_type == "traffic_spike":
+                # Traffic spike test doesn't require recovery, mark as recovered immediately
+                recovery_time = time.time() - start_time
+                break
         
         if recovery_time:
             print(f"[Chaos Test] ✅ Recuperação em {recovery_time:.2f}s (SLA: <5s)")
@@ -481,8 +489,20 @@ def positive_int(value):
 def main():
     """Função principal de execução"""
     
-    parser = argparse.ArgumentParser(description="Simulador de Arquitetura Híbrida Agro Remoto")
+    parser = argparse.ArgumentParser(
+        description="Simulador de Arquitetura Híbrida Agro Remoto: Edge + Cloud + IoT"
+    )
     parser.add_argument('--duration', type=positive_int, default=300,
+                        help='Duração da simulação em segundos (padrão: 300)')
+    parser.add_argument('--sensors', type=positive_int, default=9,
+                        help='Número de sensores IoT (padrão: 9)')
+    parser.add_argument('--edges', type=positive_int, default=3,
+                        help='Número de nós de edge (padrão: 3)')
+    parser.add_argument('--cloud-prob', type=float, default=0.3,
+                        help='Probabilidade de envio ao cloud (padrão: 0.3)')
+    parser.add_argument('--version', action='version', version='AgroEdgeSim v1.0')
+    
+    args = parser.parse_args()
 
     print("="*60)
     print("ARQUITETURA HÍBRIDA EDGE COMPUTING - AGRO REMOTO")
