@@ -2,7 +2,15 @@
 """
 Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 Autor: Sistema de Análise de Infraestrutura
-Descrição: Simula rede híbrida, edge computing resiliente e testes de validação
+Descrição: Simula rede híbrida, edge computing resiliente e testes de validação.
+
+Este módulo pode ser executado diretamente via linha de comando como um simulador.
+A interface CLI aceita, entre outros, o argumento ``--duration`` para configurar
+o tempo de execução da simulação (por exemplo, em segundos), permitindo ajustar
+a duração dos testes de validação conforme a necessidade.
+
+Exemplo de uso:
+    python simulador_agro_edge.py --duration 300
 """
 
 import time
