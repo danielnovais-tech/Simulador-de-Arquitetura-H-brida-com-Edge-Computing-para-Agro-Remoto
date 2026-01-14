@@ -486,6 +486,17 @@ def positive_int(value):
     return ivalue
 
 
+def probability(value):
+    """Valida que o valor é uma probabilidade entre 0.0 e 1.0"""
+    try:
+        fvalue = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} não é um número válido")
+    if not (0.0 <= fvalue <= 1.0):
+        raise argparse.ArgumentTypeError(f"{value} deve estar entre 0.0 e 1.0")
+    return fvalue
+
+
 def main():
     """Função principal de execução"""
     
@@ -498,7 +509,7 @@ def main():
                         help='Número de sensores IoT (padrão: 9)')
     parser.add_argument('--edges', type=positive_int, default=3,
                         help='Número de nós de edge (padrão: 3)')
-    parser.add_argument('--cloud-prob', type=float, default=0.3,
+    parser.add_argument('--cloud-prob', type=probability, default=0.3,
                         help='Probabilidade de envio ao cloud (padrão: 0.3)')
     parser.add_argument('--version', action='version', version='AgroEdgeSim v1.0')
     
