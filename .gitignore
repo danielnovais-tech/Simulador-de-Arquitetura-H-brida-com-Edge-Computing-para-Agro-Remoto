@@ -208,3 +208,5 @@ __marimo__/
 
 # Simulation results
 simulation_results.json
+# Simulator output files
+agro_edge_deploy.json
