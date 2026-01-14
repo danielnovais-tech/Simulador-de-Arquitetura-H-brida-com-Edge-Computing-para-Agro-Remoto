@@ -11,7 +11,7 @@ import threading
 import json
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from datetime import datetime
 import hashlib
 import argparse
