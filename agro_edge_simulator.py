@@ -103,9 +103,7 @@ class EdgeComputingSimulator:
         self.total_data_processed = 0
         self.simulation_time = 0.0
         self.metrics: Dict = {
-            'latency': [],
-            'throughput': [],
-            'reliability': []
+            'latency': []
         }
         
     def _default_config(self) -> Dict:
