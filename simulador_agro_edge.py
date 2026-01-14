@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 """
 Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
-Autor: Sistema de Análise de Infraestrutura
-Descrição: Simula rede híbrida, edge computing resiliente e testes de validação
+Hybrid Architecture Simulator with Edge Computing for Remote Agriculture
+
+Author: Infrastructure Analysis System
+Description: Simulates hybrid network, resilient edge computing and validation tests
+
+Usage:
+    python3 simulador_agro_edge.py --duration <seconds>
+    
+    Example:
+        python3 simulador_agro_edge.py --duration 300
+        
+    Arguments:
+        --duration: Simulation duration in seconds (must be a positive integer)
 """
 
 import time
 import random
 import threading
 import json
+import argparse
+import sys
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from datetime import datetime
 import hashlib
 
@@ -63,6 +76,14 @@ class TelemetryData:
 # ============ CLASSE PRINCIPAL DE SIMULAÇÃO ============
 
 class AgroEdgeSimulator:
+    """
+    Main simulator for hybrid architecture with edge computing.
+    
+    Thread Safety:
+        - telemetry_queue: Access is serialized via GIL (Python list operations are atomic)
+        - kpis: Dictionary access is protected by GIL for atomic updates
+        - For production use, consider using threading.Lock or queue.Queue for explicit safety
+    """
     def __init__(self, farm_name: str):
         self.farm_name = farm_name
         self.network_links = self._initialize_links()
@@ -296,18 +317,24 @@ class AgroEdgeSimulator:
             for _ in range(50):
                 self.generate_telemetry()
             print("📈 Pico de tráfego simulado (50 mensagens)")
+            print("[Chaos Test] ✅ Teste de pico de tráfego concluído (sem recuperação necessária)")
+            return True
         
-        # Mede tempo de recuperação
+        # Mede tempo de recuperação para testes que necessitam
         start_time = time.time()
         recovery_time = None
         
-        for i in range(10):  # Monitora por 10 ciclos
+        for _ in range(10):  # Monitora por 10 ciclos
             time.sleep(1)
             if test_type == "link_failure":
+                # Actively monitor recovery by invoking orchestration
+                self.simulate_sd_wan_orchestration()
                 if self.sd_wan_policy == "4g_failover":
                     recovery_time = time.time() - start_time
                     break
             elif test_type == "node_failure":
+                # Actively monitor recovery by invoking heartbeat
+                self.simulate_edge_heartbeat()
                 if self.edge_nodes['edge-02'].role == NodeRole.ACTIVE:
                     recovery_time = time.time() - start_time
                     break
@@ -328,9 +355,6 @@ class AgroEdgeSimulator:
         
         print("\n📡 CONECTIVIDADE:")
         for link in self.network_links.values():
-            status_color = GREEN if link.status == LinkStatus.ONLINE else YELLOW if link.status == LinkStatus.DEGRADED else RED
-            status_icon = "✅" if link.status == LinkStatus.ONLINE else "⚠️" if link.status == LinkStatus.DEGRADED else "❌"
-            print(f"  {status_color}{status_icon}{RESET} {link.name}: {link.status.value} | "
             status_icon = "✅" if link.status == LinkStatus.ONLINE else "⚠️" if link.status == LinkStatus.DEGRADED else "❌"
             print(f"  {status_icon} {link.name}: {link.status.value} | "
                   f"Latência: {link.latency:.1f}ms | BW: {link.bandwidth:.1f}Mbps")
@@ -339,11 +363,6 @@ class AgroEdgeSimulator:
         
         print("\n🖥️  EDGE COMPUTING:")
         for node in self.edge_nodes.values():
-            k3s_color = GREEN if node.k3s_status else RED
-            mqtt_color = GREEN if node.mqtt_connected else RED
-            k3s_icon = "✅" if node.k3s_status else "❌"
-            mqtt_icon = "✅" if node.mqtt_connected else "❌"
-            print(f"  {k3s_color}{k3s_icon}{RESET}{mqtt_color}{mqtt_icon}{RESET} {node.node_id} ({node.role.value}) | "
             k3s_icon = "✅" if node.k3s_status else "❌"
             mqtt_icon = "✅" if node.mqtt_connected else "❌"
             print(f"  {k3s_icon}{mqtt_icon} {node.node_id} ({node.role.value}) | "
@@ -367,7 +386,6 @@ class AgroEdgeSimulator:
         start_time = time.time()
         
         # Thread para geração contínua de telemetria
-        telemetry_thread = None
         def telemetry_worker():
             while self.running:
                 self.generate_telemetry()
@@ -475,8 +493,67 @@ class NSE3000Simulator:
 
 # ============ FUNÇÃO PRINCIPAL ============
 
+def positive_int(value):
+    """
+    Validates that a value is a positive integer.
+    
+    Args:
+        value: String representation of an integer
+        
+    Returns:
+        int: The validated positive integer
+        
+    Raises:
+        argparse.ArgumentTypeError: If value is not a positive integer
+    """
+    try:
+        ivalue = int(value)
+        if ivalue <= 0:
+            raise argparse.ArgumentTypeError(f"Duration must be a positive integer, got {value}")
+        return ivalue
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Duration must be a positive integer, got {value}")
+
+
+def serialize_dataclass_with_enums(obj):
+    """
+    Serializes a dataclass to dict with enum values properly converted.
+    
+    Args:
+        obj: A dataclass instance
+        
+    Returns:
+        dict: Dictionary with enums serialized by their value attribute
+    """
+    result = asdict(obj)
+    # Convert enum fields to their values
+    for key, value in result.items():
+        if isinstance(value, Enum):
+            result[key] = value.value
+    return result
+
+
 def main():
     """Função principal de execução"""
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description='Hybrid Architecture Simulator with Edge Computing for Remote Agriculture',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python3 simulador_agro_edge.py --duration 300
+  python3 simulador_agro_edge.py --duration 600
+        """
+    )
+    parser.add_argument(
+        '--duration',
+        type=positive_int,
+        required=True,
+        help='Simulation duration in seconds (must be a positive integer)'
+    )
+    
+    args = parser.parse_args()
+    
     print("="*60)
     print("ARQUITETURA HÍBRIDA EDGE COMPUTING - AGRO REMOTO")
     print("="*60)
@@ -496,7 +573,7 @@ def main():
     
     # Executa simulação principal
     print("\n🚀 Iniciando simulação da arquitetura...")
-    farm_simulator.run_simulation(duration=120)  # 2 minutos para demonstração
+    farm_simulator.run_simulation(duration=args.duration)
     
     # Exporta configuração
     print("\n💾 Exportando configuração para deploy...")
@@ -504,8 +581,8 @@ def main():
         'architecture': 'hybrid_edge_agro',
         'timestamp': datetime.now().isoformat(),
         'components': {
-            'network_links': [asdict(link) for link in farm_simulator.network_links.values()],
-            'edge_nodes': [asdict(node) for node in farm_simulator.edge_nodes.values()],
+            'network_links': [serialize_dataclass_with_enums(link) for link in farm_simulator.network_links.values()],
+            'edge_nodes': [serialize_dataclass_with_enums(node) for node in farm_simulator.edge_nodes.values()],
             'nse3000_config': {
                 'vlans': nse3000.vlan_config,
                 'tunnels': nse3000.ipsec_tunnels
