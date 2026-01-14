@@ -462,19 +462,19 @@ class NSE3000Simulator:
 
 # ============ FUNÇÃO PRINCIPAL ============
 
+def positive_int(value):
+    """Valida que o valor é um inteiro positivo"""
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} não é um inteiro positivo válido")
+    return ivalue
+
+
 def main():
     """Função principal de execução"""
-    def positive_int(value):
-        """Valida que o valor é um inteiro positivo"""
-        ivalue = int(value)
-        if ivalue <= 0:
-            raise argparse.ArgumentTypeError(f"{value} não é um inteiro positivo válido")
-        return ivalue
     
     parser = argparse.ArgumentParser(description="Simulador de Arquitetura Híbrida Agro Remoto")
     parser.add_argument('--duration', type=positive_int, default=300,
-                        help='Duração da simulação em segundos (padrão: 300)')
-    args = parser.parse_args()
 
     print("="*60)
     print("ARQUITETURA HÍBRIDA EDGE COMPUTING - AGRO REMOTO")
