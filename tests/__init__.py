@@ -1,1 +1,4 @@
+"""
+Tests module
+"""
 # Tests module
