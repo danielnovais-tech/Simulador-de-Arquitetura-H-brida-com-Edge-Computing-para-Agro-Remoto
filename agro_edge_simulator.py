@@ -3,7 +3,7 @@
 Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 (Hybrid Architecture Simulator with Edge Computing for Remote Agriculture)
 
-Simula rede híbrida e edge computing resiliente
+Simula rede híbrida com edge computing resiliente, incluindo testes de validação
 """
 
 import random
