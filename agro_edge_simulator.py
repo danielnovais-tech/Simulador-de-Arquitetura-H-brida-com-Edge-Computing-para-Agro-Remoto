@@ -8,10 +8,19 @@ Simula rede híbrida com edge computing resiliente, incluindo testes de validaç
 
 import random
 import time
+import json
+import logging
+import argparse
 from datetime import datetime
 from typing import List, Dict, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 
 # Configurações de simulação
@@ -351,6 +360,7 @@ class HybridArchitectureSimulator:
                 print(f"   Análise agregada de {len(cloud_result['statistics'])} tipos de sensores")
         
         self.simulation_time += 1
+        logging.info(f"Ciclo {self.simulation_time} concluído")
     
     def print_summary(self):
         """Imprime sumário da simulação"""
@@ -390,9 +400,46 @@ class HybridArchitectureSimulator:
         print(f"\n{'=' * 70}")
         print("✓ SIMULAÇÃO CONCLUÍDA COM SUCESSO")
         print(f"{'=' * 70}\n")
+        
+        # Exportar métricas para JSON
+        self.export_metrics_to_json()
     
-    def run(self, cycles: int):
+    def export_metrics_to_json(self):
+        """Exporta métricas da simulação para arquivo JSON"""
+        metrics_data = {
+            "simulation_time_cycles": self.simulation_time,
+            "infrastructure": {
+                "cloud_servers": 1,
+                "edge_nodes": len(self.edge_nodes),
+                "sensors": len(self.sensors)
+            },
+            "metrics": self.metrics,
+            "edge_nodes_performance": [
+                {
+                    "node_id": node.node_id,
+                    "processed_data": node.processed_data,
+                    "is_online": node.is_online,
+                    "location": node.location
+                }
+                for node in self.edge_nodes
+            ],
+            "cloud_analytics": {
+                "total_data_received": self.cloud_server.total_data_received,
+                "analyses_performed": len(self.cloud_server.analytics_results)
+            }
+        }
+        
+        with open("metrics.json", "w", encoding="utf-8") as f:
+            json.dump(metrics_data, f, indent=4, ensure_ascii=False)
+        
+        print(f"📊 Métricas exportadas para metrics.json")
+        logging.info("Métricas exportadas para metrics.json")
+    
+    def run(self, cycles: int, sleep_time: float = None):
         """Executa a simulação completa"""
+        if sleep_time is None:
+            sleep_time = CYCLE_SLEEP_TIME
+        
         print("\n" + "=" * 70)
         print("SIMULADOR DE ARQUITETURA HÍBRIDA COM EDGE COMPUTING")
         print("Para Agro Remoto")
@@ -404,7 +451,7 @@ class HybridArchitectureSimulator:
         # Executar ciclos de simulação
         for _ in range(cycles):
             self.run_simulation_cycle()
-            time.sleep(CYCLE_SLEEP_TIME)  # Pausa configurável para visualização
+            time.sleep(sleep_time)  # Pausa configurável para visualização
         
         # Sumário final
         self.print_summary()
@@ -412,8 +459,28 @@ class HybridArchitectureSimulator:
 
 def main():
     """Função principal"""
+    parser = argparse.ArgumentParser(
+        description="Simulador Agro Edge Computing - Simula arquitetura híbrida edge-cloud para agricultura remota"
+    )
+    parser.add_argument(
+        "--cycles",
+        type=int,
+        default=3,
+        help="Número de ciclos da simulação (padrão: 3)"
+    )
+    parser.add_argument(
+        "--sleep",
+        type=float,
+        default=0.5,
+        help="Tempo de pausa entre ciclos em segundos (padrão: 0.5)"
+    )
+    
+    args = parser.parse_args()
+    
+    logging.info(f"Iniciando simulação com {args.cycles} ciclos e {args.sleep}s de pausa entre ciclos")
+    
     simulator = HybridArchitectureSimulator()
-    simulator.run(cycles=3)
+    simulator.run(cycles=args.cycles, sleep_time=args.sleep)
 
 
 if __name__ == "__main__":
