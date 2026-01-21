@@ -9,6 +9,7 @@ import time
 import random
 import sys
 from datetime import datetime
+from typing import Literal, TypedDict
 
 # Alert thresholds for different sensor types
 TEMP_HIGH_THRESHOLD = 32.0
@@ -17,15 +18,23 @@ HUMIDITY_LOW_THRESHOLD = 40.0
 SOIL_LOW_THRESHOLD = 30.0
 
 
+SensorType = Literal["temperatura", "umidade", "solo"]
+
+
+class SensorReading(TypedDict):
+    type: SensorType
+    value: float
+
+
 class SensorNode:
     """Representa um nó sensor na rede agrícola"""
     
-    def __init__(self, node_id, sensor_type):
+    def __init__(self, node_id: str, sensor_type: SensorType) -> None:
         self.node_id = node_id
         self.sensor_type = sensor_type
         self.data_points = 0
     
-    def collect_data(self):
+    def collect_data(self) -> SensorReading:
         """Simula coleta de dados do sensor"""
         self.data_points += 1
         if self.sensor_type == "temperatura":
@@ -34,18 +43,18 @@ class SensorNode:
             return {"type": self.sensor_type, "value": round(random.uniform(30.0, 90.0), 2)}
         elif self.sensor_type == "solo":
             return {"type": self.sensor_type, "value": round(random.uniform(20.0, 80.0), 2)}
-        return {"type": "unknown", "value": 0}
+        raise ValueError(f"Tipo de sensor desconhecido: {self.sensor_type!r}")
 
 
 class EdgeNode:
     """Representa um nó de edge computing"""
     
-    def __init__(self, edge_id):
+    def __init__(self, edge_id: str) -> None:
         self.edge_id = edge_id
         self.processed_data = 0
         self.alerts_generated = 0
     
-    def process_data(self, sensor_data):
+    def process_data(self, sensor_data: SensorReading) -> bool:
         """Processa dados no edge node"""
         self.processed_data += 1
         
@@ -69,11 +78,11 @@ class CloudNode:
         self.total_data_received = 0
         self.alerts_processed = 0
     
-    def receive_data(self, data_count):
+    def receive_data(self, data_count: int) -> None:
         """Recebe dados agregados do edge"""
         self.total_data_received += data_count
     
-    def process_alert(self):
+    def process_alert(self) -> None:
         """Processa alertas recebidos"""
         self.alerts_processed += 1
 
@@ -81,22 +90,22 @@ class CloudNode:
 class AgroEdgeSimulator:
     """Simulador principal da arquitetura híbrida"""
     
-    def __init__(self, duration):
+    def __init__(self, duration: int) -> None:
         self.duration = duration
-        self.sensors = []
-        self.edge_nodes = []
+        self.sensors: list[SensorNode] = []
+        self.edge_nodes: list[EdgeNode] = []
         self.cloud = CloudNode()
-        self.start_time = None
-        self.end_time = None
+        self.start_time: float | None = None
+        self.end_time: float | None = None
         self.last_cloud_sync_data_count = 0
         
         # Inicializa a topologia da rede
         self._initialize_network()
     
-    def _initialize_network(self):
+    def _initialize_network(self) -> None:
         """Inicializa a topologia da rede agrícola"""
         # Cria sensores
-        sensor_types = ["temperatura", "umidade", "solo"]
+        sensor_types: list[SensorType] = ["temperatura", "umidade", "solo"]
         for i in range(9):
             sensor_type = sensor_types[i % 3]
             self.sensors.append(SensorNode(f"S{i+1}", sensor_type))
@@ -105,7 +114,7 @@ class AgroEdgeSimulator:
         for i in range(3):
             self.edge_nodes.append(EdgeNode(f"E{i+1}"))
     
-    def run_simulation(self):
+    def run_simulation(self) -> None:
         """Executa a simulação por um período especificado"""
         print("=" * 80)
         print("Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto")
@@ -162,7 +171,7 @@ class AgroEdgeSimulator:
         self.end_time = time.time()
         self._print_summary(elapsed)
     
-    def _print_status(self, elapsed, iteration):
+    def _print_status(self, elapsed: float, iteration: int) -> None:
         """Imprime status atual da simulação"""
         progress = (elapsed / self.duration) * 100
         remaining = self.duration - elapsed
@@ -176,7 +185,7 @@ class AgroEdgeSimulator:
               f"Dados processados: {total_processed:5d} | "
               f"Alertas: {total_alerts:3d}")
     
-    def _print_summary(self, actual_duration):
+    def _print_summary(self, actual_duration: float) -> None:
         """Imprime resumo final da simulação"""
         print()
         print("=" * 80)
