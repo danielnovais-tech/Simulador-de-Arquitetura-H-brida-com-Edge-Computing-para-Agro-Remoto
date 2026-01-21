@@ -1,3 +1,6 @@
+# Dependências do Simulador de Edge Computing
+# Este projeto usa apenas bibliotecas padrão do Python
+# Python >= 3.7 requerido
 # Core dependencies
 paho-mqtt>=1.6.1
 prometheus-client>=0.17.1

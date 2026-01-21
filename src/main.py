@@ -66,7 +66,8 @@ class HybridEdgeAgroSystem:
                 location={"lat": -15.78 + i*0.01, "lon": -47.93 + i*0.01},
                 cpu_cores=4,
                 memory_gb=8,
-                storage_gb=100
+                storage_gb=100,
+                power_watts=45.0 + i * 5.0  # Realistic power consumption for edge nodes
             )
             for i in range(1, 5)
         ]
@@ -281,6 +282,9 @@ async def main():
         print(f"\nEdge Cluster:")
         print(f"  Healthy Nodes: {status['edge_cluster']['healthy_nodes']}/{status['edge_cluster']['total_nodes']}")
         print(f"  Running Workloads: {status['edge_cluster']['total_workloads']}")
+        # Display power consumption for each node
+        for node_id, node_info in status['edge_cluster']['nodes'].items():
+            print(f"   ⚡ Consumo estimado ({node_info['name']}): {node_info['power_watts']:.1f} W")
         print(f"\nSecurity:")
         print(f"  Active Sessions: {status['security']['active_sessions']}")
         print(f"  Active Policies: {status['security']['active_policies']}")
