@@ -1,118 +1,49 @@
-# Hybrid Edge Computing Architecture for Remote Agriculture / Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
+# Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto
 
-**Complete resilient architecture simulation with network failover, edge orchestration, telemetry, chaos testing, and observability**  
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)  
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Simula rede híbrida, edge computing resiliente e testes de validação
 
-This simulator models a hybrid connectivity and edge computing architecture designed for **remote farms** in LATAM, combining **Starlink** as primary link, 4G failover, LoRa mesh, local processing with edge inference, and simulated integration of **Cambium NSE3000** (Network Service Edge) for QoS, VLAN segmentation, zero-trust security, and secure backhaul.  
+## Descrição
 
-The goal is to validate resilience, low latency, and productivity gains (+30% simulated) in "off-the-map" scenarios where fiber isn't available. (Nota: Esta documentação está principalmente em inglês para acessibilidade global; seções chave em português disponíveis sob solicitação.)
+Este simulador demonstra uma arquitetura híbrida de edge computing para agricultura remota, incluindo:
 
-## 🎯 Key Performance Indicators (KPIs)
-This system validates and achieves the following KPIs:
-- ✅ **>99.5% Availability** - High availability through network resilience
-- ✅ **<5s Failover Time** - Rapid network failover between Starlink/4G/LoRa
-- ✅ **<50ms Latency** - Low latency communication for real-time control
-- ✅ **+30% Productivity Gain** - Autonomous harvest optimization
+- Nós de edge computing distribuídos em diferentes localizações de fazendas
+- Sensores IoT para monitoramento (temperatura, umidade, umidade do solo)
+- Servidor cloud para processamento centralizado
+- Rede híbrida com processamento distribuído e resiliente
 
-## 🏗️ Architecture Overview
+## Uso
 
-┌─────────────────────────────────────────────────────────────────┐
-│ Remote Agriculture Site                                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐             │
-│ │ Starlink     │ │ 4G           │ │ LoRa         │             │
-│ │ (Primary)    │ │ (Secondary)  │ │ (Fallback)   │             │
-│ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘             │
-│        └────────────┬─────────────────┬─────┘                   │
-│                     │                                           │
-│             Network Resilience Manager                          │
-│             (Auto-failover <5s)                                 │
-│                     │                                           │
-│        ┌────────────┴────────────┐                              │
-│        │                         │                              │
-│ ┌────▼─────┐ ┌─────▼────┐ ┌─────▼────┐                         │
-│ │ K3s      │ │ MQTT     │ │ NSE3000  │                         │
-│ │ Edge     │◄──────────►│ Telemetry│ │ (QoS/Security)          │
-│ │ Cluster  │ │ Broker   │ └──────────┘                         │
-│ └────┬─────┘ └─────┬────┘                                       │
-│      │             │                                            │
-│ ┌────▼─────────────────────────▼────┐                           │
-│ │ IoT Sensors & Actuators          │                           │
-│ │ (Soil, Climate, Crop Monitoring) │                           │
-│ └───────────────────────────────────┘                           │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ Security Layer (Zero-Trust)                                     │
-│ NSE3000 Policies | Authentication | Encryption                  │
-├─────────────────────────────────────────────────────────────────┤
-│ Observability (Prometheus + Grafana)                            │
-│ Metrics | Logging | Alerting | Dashboards                       │
-└─────────────────────────────────────────────────────────────────┘
+### Execução básica (duração padrão = 300 segundos ≈ 5 minutos)
 
-
-## 🚀 Features
-### 1. **Network Resilience Layer**
-- **Multi-network Failover**: Automatic switching between Starlink, 4G, and LoRa
-- **Health Monitoring**: Continuous health checks on all network interfaces
-- **Sub-5s Failover**: Meets strict failover time requirements
-- **Latency Optimization**: Maintains <50ms latency for critical operations
-- **SD-WAN Híbrido**: Seleção inteligente de links (Starlink primário, 4G failover, LoRa para baixa largura)
-
-### 2. **Edge Computing with K3s**
-- **Lightweight Kubernetes**: K3s cluster orchestration optimized for edge
-- **Workload Management**: Automatic workload distribution across edge nodes
-- **Resource Optimization**: Efficient CPU, memory, and storage allocation
-- **High Availability**: Node failure recovery and workload rescheduling
-- **Integração NSE3000**: Simulação de QoS por tipo de dado, segmentação VLAN (OT/IT), políticas zero-trust e logging
-
-### 3. **MQTT Telemetry System**
-- **Real-time Data Collection**: Agriculture sensor data (soil, climate, crops)
-- **Message Buffering**: Resilient to network interruptions
-- **Data Validation**: Quality checks on sensor readings
-- **Scalable Architecture**: Handles thousands of sensors
-- **Telemetria Multi-Tipo**: Suporte a temperatura, umidade, imagens, atuadores e dados críticos
-
-### 4. **Chaos Engineering**
-- **Network Failure Simulation**: Test failover mechanisms
-- **Node Failure Tests**: Validate cluster resilience
-- **Latency Injection**: Performance under degraded conditions
-- **Partition Testing**: Split-brain scenario validation
-- **Resource Exhaustion**: Stress testing
-- **Testes de Caos**: Falha de link, falha de nó, pico de tráfego
-
-### 5. **Observability & Monitoring**
-- **Prometheus Metrics**: Real-time KPI tracking
-- **Grafana Dashboards**: Visual monitoring and alerting
-- **Audit Logging**: Complete system activity logs
-- **Health Checks**: Component status monitoring
-
-### 6. **Security (NSE3000 & Zero-Trust)**
-- **Zero-Trust Architecture**: Never trust, always verify
-- **Role-Based Access Control**: Granular permissions
-- **Session Management**: Secure authentication
-- **Certificate Management**: TLS/SSL encryption
-- **Audit Trail**: Complete security event logging
-
-### 7. **Agriculture Data & Validation**
-- **Realistic Sensor Data**: Simulated agriculture sensor readings
-- **Crop Growth Modeling**: Multi-stage crop development
-- **Autonomous Harvest Decisions**: AI-driven harvest optimization
-- **Productivity Metrics**: Real productivity gain calculations
-- **Inferência Local**: Análise de imagens para colheita com cache resiliente
-
-## 📦 Installation
-### Prerequisites
-- Python 3.10 or higher
-- pip package manager
-
-### Setup
 ```bash
-# Clone the repository
-git clone https://github.com/danielnovais-tech/Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto.git
-cd Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto
-# Install dependencies
-pip install -r requirements.txt
-# Or install in development mode
-pip install -e .
+python agro_edge_simulator.py
+```
+
+### Execução com duração personalizada
+
+```bash
+python agro_edge_simulator.py --duration 60  # 60 segundos
+```
+
+### Opções disponíveis
+
+```bash
+python agro_edge_simulator.py --help
+```
+
+## Componentes da Simulação
+
+- **3 Nós Edge**: Processam dados localmente em diferentes fazendas
+- **9 Sensores IoT**: Coletam dados de temperatura, umidade e umidade do solo
+- **1 Servidor Cloud**: Recebe dados críticos para processamento centralizado
+- **Arquitetura Híbrida**: Maior parte do processamento no edge, reduzindo latência e uso de rede
+
+## Saída
+
+O simulador fornece:
+
+- Status em tempo real a cada 30 segundos
+- Métricas de CPU e memória dos nós edge
+- Estatísticas de dados processados
+- Eficiência do edge computing
+- Resumo final completo

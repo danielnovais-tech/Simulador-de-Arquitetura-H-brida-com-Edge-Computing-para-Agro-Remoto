@@ -5,15 +5,16 @@ Tests sensor data generation, edge processing, cloud processing, CLI, and integr
 import pytest
 import sys
 import os
-import argparse
-import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from unittest.mock import MagicMock
 from io import StringIO
+from typing import Any, cast
 
 # Add the parent directory to sys.path to import agro_edge_simulator
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agro_edge_simulator import (
+    SensorReading,
     SensorNode,
     EdgeNode,
     CloudNode,
@@ -88,8 +89,10 @@ class TestSensorNode:
     
     def test_unknown_sensor_type(self):
         """Test unknown sensor type returns default values"""
-        sensor = SensorNode("S4", "unknown_type")
-        data = sensor.collect_data()
+        sensor = SensorNode("S4", "unknown_type")  # type: ignore[reportArgumentType]
+        # collect_data() is typed in the simulator for known sensor types;
+        # for this explicit "unknown" scenario we validate behavior at runtime.
+        data = cast(Any, sensor.collect_data())
         
         assert data["type"] == "unknown"
         assert data["value"] == 0
@@ -112,7 +115,7 @@ class TestEdgeNode:
     def test_process_normal_temperature(self):
         """Test edge processes normal temperature without alerts"""
         edge = EdgeNode("E1")
-        data = {"type": "temperatura", "value": 25.0}
+        data: SensorReading = {"type": "temperatura", "value": 25.0}
         
         alert = edge.process_data(data)
         
@@ -121,9 +124,9 @@ class TestEdgeNode:
         assert alert is False
     
     def test_process_high_temperature_alert(self):
-        """Test edge generates alert for high temperature (>32.0)"""
+        """Test edge generates alert for high temperature (>TEMP_HIGH_THRESHOLD)"""
         edge = EdgeNode("E1")
-        data = {"type": "temperatura", "value": 35.0}
+        data: SensorReading = {"type": "temperatura", "value": TEMP_HIGH_THRESHOLD + 3.0}
         
         alert = edge.process_data(data)
         
@@ -132,9 +135,9 @@ class TestEdgeNode:
         assert alert is True
     
     def test_process_low_temperature_alert(self):
-        """Test edge generates alert for low temperature (<18.0)"""
+        """Test edge generates alert for low temperature (<TEMP_LOW_THRESHOLD)"""
         edge = EdgeNode("E1")
-        data = {"type": "temperatura", "value": 15.0}
+        data: SensorReading = {"type": "temperatura", "value": TEMP_LOW_THRESHOLD - 3.0}
         
         alert = edge.process_data(data)
         
@@ -143,9 +146,9 @@ class TestEdgeNode:
         assert alert is True
     
     def test_process_low_humidity_alert(self):
-        """Test edge generates alert for low humidity (<40.0)"""
+        """Test edge generates alert for low humidity (<HUMIDITY_LOW_THRESHOLD)"""
         edge = EdgeNode("E1")
-        data = {"type": "umidade", "value": 35.0}
+        data: SensorReading = {"type": "umidade", "value": HUMIDITY_LOW_THRESHOLD - 5.0}
         
         alert = edge.process_data(data)
         
@@ -156,7 +159,7 @@ class TestEdgeNode:
     def test_process_normal_humidity(self):
         """Test edge processes normal humidity without alerts"""
         edge = EdgeNode("E1")
-        data = {"type": "umidade", "value": 60.0}
+        data: SensorReading = {"type": "umidade", "value": 60.0}
         
         alert = edge.process_data(data)
         
@@ -165,9 +168,9 @@ class TestEdgeNode:
         assert alert is False
     
     def test_process_low_soil_alert(self):
-        """Test edge generates alert for low soil moisture (<30.0)"""
+        """Test edge generates alert for low soil moisture (<SOIL_LOW_THRESHOLD)"""
         edge = EdgeNode("E1")
-        data = {"type": "solo", "value": 25.0}
+        data: SensorReading = {"type": "solo", "value": SOIL_LOW_THRESHOLD - 5.0}
         
         alert = edge.process_data(data)
         
@@ -178,7 +181,7 @@ class TestEdgeNode:
     def test_process_normal_soil(self):
         """Test edge processes normal soil moisture without alerts"""
         edge = EdgeNode("E1")
-        data = {"type": "solo", "value": 50.0}
+        data: SensorReading = {"type": "solo", "value": 50.0}
         
         alert = edge.process_data(data)
         
@@ -191,16 +194,16 @@ class TestEdgeNode:
         edge = EdgeNode("E1")
         
         # Process 5 normal readings
-        for i in range(5):
-            data = {"type": "temperatura", "value": 25.0}
+        for _ in range(5):
+            data: SensorReading = {"type": "temperatura", "value": 25.0}
             edge.process_data(data)
         
         assert edge.processed_data == 5
         assert edge.alerts_generated == 0
         
         # Process 3 alert-triggering readings
-        for i in range(3):
-            data = {"type": "temperatura", "value": 35.0}
+        for _ in range(3):
+            data: SensorReading = {"type": "temperatura", "value": TEMP_HIGH_THRESHOLD + 3.0}
             edge.process_data(data)
         
         assert edge.processed_data == 8
@@ -304,7 +307,7 @@ class TestAgroEdgeSimulator:
     
     @patch('time.sleep')
     @patch('builtins.print')
-    def test_brief_simulation_run(self, mock_print, mock_sleep):
+    def test_brief_simulation_run(self, mock_print: MagicMock, mock_sleep: MagicMock) -> None:
         """Test brief simulation run (integration test)"""
         simulator = AgroEdgeSimulator(duration=2)
         
@@ -326,7 +329,7 @@ class TestAgroEdgeSimulator:
     
     @patch('time.sleep')
     @patch('builtins.print')
-    def test_interrupt_handling(self, mock_print, mock_sleep):
+    def test_interrupt_handling(self, mock_print: MagicMock, mock_sleep: MagicMock) -> None:
         """Test simulation handles keyboard interrupt gracefully"""
         simulator = AgroEdgeSimulator(duration=100)
         
@@ -425,27 +428,27 @@ class TestEdgeCases:
         edge = EdgeNode("E1")
         
         # Just below high threshold - no alert
-        data = {"type": "temperatura", "value": 31.9}
+        data: SensorReading = {"type": "temperatura", "value": TEMP_HIGH_THRESHOLD - 0.1}
         assert edge.process_data(data) is False
         
         # At high threshold - no alert
-        data = {"type": "temperatura", "value": 32.0}
+        data: SensorReading = {"type": "temperatura", "value": float(TEMP_HIGH_THRESHOLD)}
         assert edge.process_data(data) is False
         
         # Just above high threshold - alert
-        data = {"type": "temperatura", "value": 32.1}
+        data = {"type": "temperatura", "value": float(TEMP_HIGH_THRESHOLD) + 0.1}
         assert edge.process_data(data) is True
         
         # Just above low threshold - no alert
-        data = {"type": "temperatura", "value": 18.1}
+        data: SensorReading = {"type": "temperatura", "value": float(TEMP_LOW_THRESHOLD) + 0.1}
         assert edge.process_data(data) is False
         
         # At low threshold - no alert
-        data = {"type": "temperatura", "value": 18.0}
+        data: SensorReading = {"type": "temperatura", "value": float(TEMP_LOW_THRESHOLD)}
         assert edge.process_data(data) is False
         
         # Just below low threshold - alert
-        data = {"type": "temperatura", "value": 17.9}
+        data = {"type": "temperatura", "value": float(TEMP_LOW_THRESHOLD) - 0.1}
         assert edge.process_data(data) is True
     
     def test_threshold_boundaries_humidity(self):
@@ -453,15 +456,15 @@ class TestEdgeCases:
         edge = EdgeNode("E1")
         
         # Just above threshold - no alert
-        data = {"type": "umidade", "value": 40.1}
+        data: SensorReading = {"type": "umidade", "value": float(HUMIDITY_LOW_THRESHOLD) + 0.1}
         assert edge.process_data(data) is False
         
         # At threshold - no alert
-        data = {"type": "umidade", "value": 40.0}
+        data: SensorReading = {"type": "umidade", "value": float(HUMIDITY_LOW_THRESHOLD)}
         assert edge.process_data(data) is False
         
         # Just below threshold - alert
-        data = {"type": "umidade", "value": 39.9}
+        data = {"type": "umidade", "value": float(HUMIDITY_LOW_THRESHOLD) - 0.1}
         assert edge.process_data(data) is True
     
     def test_threshold_boundaries_soil(self):
@@ -469,15 +472,15 @@ class TestEdgeCases:
         edge = EdgeNode("E1")
         
         # Just above threshold - no alert
-        data = {"type": "solo", "value": 30.1}
+        data: SensorReading = {"type": "solo", "value": float(SOIL_LOW_THRESHOLD) + 0.1}
         assert edge.process_data(data) is False
         
         # At threshold - no alert
-        data = {"type": "solo", "value": 30.0}
+        data: SensorReading = {"type": "solo", "value": float(SOIL_LOW_THRESHOLD)}
         assert edge.process_data(data) is False
         
         # Just below threshold - alert
-        data = {"type": "solo", "value": 29.9}
+        data = {"type": "solo", "value": float(SOIL_LOW_THRESHOLD) - 0.1}
         assert edge.process_data(data) is True
     
     def test_cloud_sync_behavior(self):
@@ -498,7 +501,7 @@ class TestIntegration:
     
     @patch('time.sleep')
     @patch('builtins.print')
-    def test_end_to_end_simulation(self, mock_print, mock_sleep):
+    def test_end_to_end_simulation(self, mock_print: MagicMock, mock_sleep: MagicMock) -> None:
         """Test complete end-to-end simulation with all components"""
         # Create simulator
         simulator = AgroEdgeSimulator(duration=3)
