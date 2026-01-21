@@ -7,13 +7,17 @@ Author: Infrastructure Analysis System
 Description: Simulates hybrid network, resilient edge computing and validation tests
 
 Usage:
-    python3 simulador_agro_edge.py --duration <seconds>
+    python3 simulador_agro_edge.py [--duration <seconds>] [--sensors <n>] [--edges <n>] [--cloud-prob <0..1>]
     
     Example:
         python3 simulador_agro_edge.py --duration 300
         
     Arguments:
-        --duration: Simulation duration in seconds (must be a positive integer)
+        --duration: Simulation duration in seconds (positive integer, default: 300)
+        --sensors: Number of simulated IoT sensors (positive integer, default: 9)
+        --edges: Number of edge nodes (positive integer, default: 3)
+        --cloud-prob: Probability (0.0-1.0) that telemetry is sent to cloud instead of edge queue (default: 0.3)
+        --version: Show version and exit
 """
 
 import time
@@ -24,7 +28,7 @@ import argparse
 import sys
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 from datetime import datetime
 import hashlib
 
@@ -84,10 +88,14 @@ class AgroEdgeSimulator:
         - kpis: Dictionary access is protected by GIL for atomic updates
         - For production use, consider using threading.Lock or queue.Queue for explicit safety
     """
-    def __init__(self, farm_name: str):
+    def __init__(self, farm_name: str, *, num_sensors: int = 9, num_edges: int = 3, cloud_prob: float = 0.3):
         self.farm_name = farm_name
+        self.num_sensors = num_sensors
+        self.num_edges = num_edges
+        self.cloud_prob = cloud_prob
         self.network_links = self._initialize_links()
         self.edge_nodes = self._initialize_nodes()
+        self.sensors = self._initialize_sensors()
         self.telemetry_queue = []
         self.kpis = {
             'availability': 100.0,
@@ -95,7 +103,9 @@ class AgroEdgeSimulator:
             'failover_count': 0,
             'messages_delivered': 0,
             'messages_lost': 0,
-            'productivity_gain': 0.0
+            'productivity_gain': 0.0,
+            'edge_messages': 0,
+            'cloud_messages': 0
         }
         self.running = False
         self.sd_wan_policy = "starlink_primary"
@@ -145,26 +155,52 @@ class AgroEdgeSimulator:
     def _initialize_nodes(self) -> Dict[str, EdgeNode]:
         """Inicializa nós edge em configuração active-active"""
         now = datetime.now()
-        return {
-            'edge-01': EdgeNode(
-                node_id="edge-01",
-                role=NodeRole.ACTIVE,
+        nodes: Dict[str, EdgeNode] = {}
+
+        # Keep an active-active flavor: first two nodes start ACTIVE (if present),
+        # remaining nodes start STANDBY and may be promoted during failover.
+        for i in range(self.num_edges):
+            node_id = f"edge-{i+1:02d}"
+            role = NodeRole.ACTIVE if i < 2 else NodeRole.STANDBY
+            nodes[node_id] = EdgeNode(
+                node_id=node_id,
+                role=role,
                 k3s_status=True,
                 mqtt_connected=True,
-                cpu_usage=35.0,
-                mem_usage=42.0,
-                last_heartbeat=now
-            ),
-            'edge-02': EdgeNode(
-                node_id="edge-02",
-                role=NodeRole.ACTIVE,
-                k3s_status=True,
-                mqtt_connected=True,
-                cpu_usage=28.0,
-                mem_usage=38.0,
+                cpu_usage=random.uniform(20.0, 45.0),
+                mem_usage=random.uniform(30.0, 55.0),
                 last_heartbeat=now
             )
-        }
+
+        return nodes
+
+    def _initialize_sensors(self) -> List[Tuple[str, str, float, str]]:
+        """Inicializa uma lista de sensores simulados (id, tipo, valor_base, localização)."""
+        base_sensors: List[Tuple[str, str, float, str]] = [
+            ("temp-001", "temperature", 22.5, "field-north"),
+            ("humid-001", "humidity", 65.0, "field-north"),
+            ("soil-001", "moisture", 42.0, "field-south"),
+            ("camera-001", "image", 1.0, "entrance"),
+            ("harvester-001", "actuator", 0.75, "field-central"),
+        ]
+
+        if self.num_sensors <= len(base_sensors):
+            return base_sensors[: self.num_sensors]
+
+        sensors: List[Tuple[str, str, float, str]] = list(base_sensors)
+        extra = self.num_sensors - len(base_sensors)
+
+        extra_types: List[Tuple[str, str, float, str]] = [
+            ("temp", "temperature", 23.0, "field-west"),
+            ("humid", "humidity", 62.0, "field-east"),
+            ("soil", "moisture", 40.0, "field-central"),
+        ]
+
+        for i in range(extra):
+            prefix, data_type, base_value, location = extra_types[i % len(extra_types)]
+            sensors.append((f"{prefix}-{i+2:03d}", data_type, base_value, location))
+
+        return sensors
     
     def simulate_sd_wan_orchestration(self):
         """Simula orquestração SD-WAN para failover"""
@@ -216,24 +252,22 @@ class AgroEdgeSimulator:
     
     def _activate_failover(self, failed_node_id: str):
         """Ativa failover para nó standby"""
-        standby_nodes = [n for n in self.edge_nodes.values() 
-                        if n.node_id != failed_node_id and n.k3s_status and n.mqtt_connected]
-        
-        if standby_nodes:
-            standby_nodes[0].role = NodeRole.ACTIVE
-            print(f"[Edge] 🔄 Failover ativado para {standby_nodes[0].node_id}")
+        candidates = [
+            n for n in self.edge_nodes.values()
+            if n.node_id != failed_node_id and n.k3s_status and n.mqtt_connected
+        ]
+
+        # Prefer promoting STANDBY nodes first.
+        standby_candidates = [n for n in candidates if n.role == NodeRole.STANDBY]
+        target = (standby_candidates[0] if standby_candidates else (candidates[0] if candidates else None))
+
+        if target:
+            target.role = NodeRole.ACTIVE
+            print(f"[Edge] 🔄 Failover ativado para {target.node_id}")
     
     def generate_telemetry(self):
         """Gera dados de telemetria simulados"""
-        sensors = [
-            ("temp-001", "temperature", 22.5, "field-north"),
-            ("humid-001", "humidity", 65.0, "field-north"),
-            ("soil-001", "moisture", 42.0, "field-south"),
-            ("camera-001", "image", 1.0, "entrance"),  # valor representa confiança
-            ("harvester-001", "actuator", 0.75, "field-central")  # 75% de produtividade
-        ]
-        
-        for sensor_id, data_type, base_value, location in sensors:
+        for sensor_id, data_type, base_value, location in self.sensors:
             # Adiciona ruído aos dados
             noise = random.uniform(-2.0, 2.0)
             value = max(0.0, base_value + noise)
@@ -256,8 +290,14 @@ class AgroEdgeSimulator:
                 self.kpis['messages_lost'] += 1
                 print(f"[Telemetry] 📉 Mensagem perdida do sensor {sensor_id}")
             else:
-                self.telemetry_queue.append(telemetry)
                 self.kpis['messages_delivered'] += 1
+
+                # Decide se telemetria vai para cloud ou para a fila local (edge)
+                if random.random() < self.cloud_prob:
+                    self.kpis['cloud_messages'] += 1
+                else:
+                    self.telemetry_queue.append(telemetry)
+                    self.kpis['edge_messages'] += 1
     
     def process_edge_inference(self):
         """Simula inferência local com visão computacional"""
@@ -307,10 +347,16 @@ class AgroEdgeSimulator:
             print("🔗 Link Starlink desligado forçadamente")
             
         elif test_type == "node_failure":
-            # Desliga nó edge
-            self.edge_nodes['edge-01'].k3s_status = False
-            self.edge_nodes['edge-01'].mqtt_connected = False
-            print("🖥️  Nó edge-01 desligado forçadamente")
+            # Desliga nó edge (primeiro nó disponível)
+            if len(self.edge_nodes) < 2:
+                print("🖥️  Teste ignorado: é necessário ao menos 2 edge nodes para validar failover")
+                return True
+
+            failed_id = sorted(self.edge_nodes.keys())[0]
+            self.edge_nodes[failed_id].k3s_status = False
+            self.edge_nodes[failed_id].mqtt_connected = False
+            self.edge_nodes[failed_id].role = NodeRole.STANDBY
+            print(f"🖥️  Nó {failed_id} desligado forçadamente")
             
         elif test_type == "traffic_spike":
             # Simula pico de tráfego
@@ -335,7 +381,11 @@ class AgroEdgeSimulator:
             elif test_type == "node_failure":
                 # Actively monitor recovery by invoking heartbeat
                 self.simulate_edge_heartbeat()
-                if self.edge_nodes['edge-02'].role == NodeRole.ACTIVE:
+                active_healthy = [
+                    n for n in self.edge_nodes.values()
+                    if n.role == NodeRole.ACTIVE and n.k3s_status and n.mqtt_connected
+                ]
+                if active_healthy:
                     recovery_time = time.time() - start_time
                     break
         
@@ -374,6 +424,7 @@ class AgroEdgeSimulator:
         print(f"  🔄 Failovers: {self.kpis['failover_count']}")
         print(f"  📨 Mensagens: {self.kpis['messages_delivered']} entregues, "
               f"{self.kpis['messages_lost']} perdidas")
+        print(f"  ☁️  Cloud: {self.kpis['cloud_messages']} | 🧠 Edge: {self.kpis['edge_messages']}")
         print(f"  🚀 Ganho Produtividade: +{self.kpis['productivity_gain']:.2f}%")
         
         print(f"\n📦 Fila de telemetria: {len(self.telemetry_queue)} mensagens")
@@ -508,11 +559,26 @@ def positive_int(value):
     """
     try:
         ivalue = int(value)
-        if ivalue <= 0:
-            raise argparse.ArgumentTypeError(f"Duration must be a positive integer, got {value}")
-        return ivalue
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Duration must be a positive integer, got {value}")
+        raise argparse.ArgumentTypeError(f"{value} must be a positive integer")
+
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} must be a positive integer")
+
+    return ivalue
+
+
+def probability(value):
+    """Validates that a value is a float in [0.0, 1.0]."""
+    try:
+        fvalue = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} não é um número válido")
+
+    if not (0.0 <= fvalue <= 1.0):
+        raise argparse.ArgumentTypeError(f"{value} deve estar entre 0.0 e 1.0")
+
+    return fvalue
 
 
 def serialize_dataclass_with_enums(obj):
@@ -541,35 +607,71 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  python3 simulador_agro_edge.py
   python3 simulador_agro_edge.py --duration 300
-  python3 simulador_agro_edge.py --duration 600
+  python3 simulador_agro_edge.py --duration 60 --sensors 15 --edges 5 --cloud-prob 0.5
         """
     )
     parser.add_argument(
         '--duration',
         type=positive_int,
-        required=True,
-        help='Simulation duration in seconds (must be a positive integer)'
+        default=300,
+        help='Simulation duration in seconds (positive integer, default: 300)'
     )
+    parser.add_argument(
+        '--sensors',
+        type=positive_int,
+        default=9,
+        help='Number of simulated IoT sensors (positive integer, default: 9)'
+    )
+    parser.add_argument(
+        '--edges',
+        type=positive_int,
+        default=3,
+        help='Number of edge nodes (positive integer, default: 3)'
+    )
+    parser.add_argument(
+        '--cloud-prob',
+        type=probability,
+        default=0.3,
+        help='Probability of sending telemetry to cloud instead of edge queue (0.0-1.0, default: 0.3)'
+    )
+    parser.add_argument('--version', action='version', version='AgroEdgeSim v1.0')
     
     args = parser.parse_args()
     
     print("="*60)
     print("ARQUITETURA HÍBRIDA EDGE COMPUTING - AGRO REMOTO")
     print("="*60)
+    print(f"Duração: {args.duration}s | Sensores: {args.sensors} | Edge nodes: {args.edges} | Cloud prob: {args.cloud_prob:.2f}")
     
     # Inicializa simuladores
-    farm_simulator = AgroEdgeSimulator("Fazenda Modelo SP-01")
+    if args.edges < 2:
+        print("⚠️  Aviso: --edges < 2 limita testes de failover (node_failure).")
+
+    farm_simulator = AgroEdgeSimulator(
+        "Fazenda Modelo SP-01",
+        num_sensors=args.sensors,
+        num_edges=args.edges,
+        cloud_prob=args.cloud_prob,
+    )
     nse3000 = NSE3000Simulator()
     
     # Configura NSE3000
     print("\n🔧 Configurando NSE3000...")
-    nse3000.configure_vlan('ot_network', 'sensor-temp-001')
+    # Map first few simulated sensors into OT network
+    for sensor_id, _, _, _ in farm_simulator.sensors[: min(5, len(farm_simulator.sensors))]:
+        nse3000.configure_vlan('ot_network', f"sensor-{sensor_id}")
+
     nse3000.configure_vlan('ot_network', 'actuator-harvester-001')
-    nse3000.configure_vlan('it_network', 'edge-01')
-    nse3000.configure_vlan('it_network', 'edge-02')
+
+    # Map all edge nodes into IT network
+    for node_id in sorted(farm_simulator.edge_nodes.keys()):
+        nse3000.configure_vlan('it_network', node_id)
+
     nse3000.create_ipsec_tunnel("cloud-agro-brasil.azure.com")
-    nse3000.apply_zero_trust_policy("edge-01", "spiffe://agro/edge/node-01")
+    first_edge = sorted(farm_simulator.edge_nodes.keys())[0] if farm_simulator.edge_nodes else "edge-01"
+    nse3000.apply_zero_trust_policy(first_edge, "spiffe://agro/edge/node-01")
     
     # Executa simulação principal
     print("\n🚀 Iniciando simulação da arquitetura...")
@@ -580,6 +682,12 @@ Examples:
     config = {
         'architecture': 'hybrid_edge_agro',
         'timestamp': datetime.now().isoformat(),
+        'cli_args': {
+            'duration': args.duration,
+            'sensors': args.sensors,
+            'edges': args.edges,
+            'cloud_prob': args.cloud_prob
+        },
         'components': {
             'network_links': [serialize_dataclass_with_enums(link) for link in farm_simulator.network_links.values()],
             'edge_nodes': [serialize_dataclass_with_enums(node) for node in farm_simulator.edge_nodes.values()],

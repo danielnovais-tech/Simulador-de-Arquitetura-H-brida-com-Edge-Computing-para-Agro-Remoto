@@ -173,7 +173,7 @@ def test_no_unused_imports():
     print("Testing for unused imports...")
     
     # Read the source file
-    with open('simulador_agro_edge.py', 'r') as f:
+    with open('simulador_agro_edge.py', 'r', encoding='utf-8') as f:
         content = f.read()
     
     # Check that if List is imported, it's actually used
