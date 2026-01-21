@@ -19,15 +19,19 @@ Este projeto implementa um simulador completo de arquitetura híbrida que demons
 - Python 3.7 ou superior
 - Nenhuma dependência externa necessária (usa apenas bibliotecas padrão do Python)
 
+**Nota (Python 3.14+ no Windows):** alguns pacotes opcionais de “introspecção de rede/sistema” (como `netifaces` e `psutil`) ainda podem não ter wheels disponíveis. Por isso, eles são ignorados automaticamente na instalação em Python 3.14+ (via marcadores em `requirements.txt`). Se você precisar dessas funcionalidades, use Python 3.13 ou instale esses pacotes a partir do source.
+
 ### Execução Básica
 
 1. **Clone o repositório** (se ainda não fez):
+
 ```bash
 git clone https://github.com/danielnovais-tech/Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto.git
 cd Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto
 ```
 
-2. **Execute o simulador**:
+1. **Execute o simulador**:
+
 ```bash
 python3 agro_edge_simulator.py
 ```
@@ -35,6 +39,7 @@ python3 agro_edge_simulator.py
 ### Execução com Permissões
 
 Se necessário, torne o arquivo executável:
+
 ```bash
 chmod +x agro_edge_simulator.py
 ./agro_edge_simulator.py
@@ -177,6 +182,7 @@ Este simulador foi desenvolvido para modelar arquiteturas de edge computing em a
 Representa um nó de computação de borda (edge computing) com simulação de consumo de energia.
 
 **Atributos:**
+
 - `power_watts` (float): Consumo de energia em watts. Valor padrão: 12.5W
 - `cpu_usage` (float): Percentual de uso de CPU (0-100). Valor padrão: 0.0
 - `mem_usage` (float): Percentual de uso de memória (0-100). Valor padrão: 0.0
@@ -186,11 +192,13 @@ Representa um nó de computação de borda (edge computing) com simulação de c
 Função que simula o heartbeat de um nó edge e atualiza o consumo de energia com base no uso de CPU e memória.
 
 **Fórmula de cálculo:**
+
 ```
 power_watts = 12.5 + (cpu_usage * 0.2) + (mem_usage * 0.1)
 ```
 
 **Parâmetros:**
+
 - `node` (EdgeNode): O nó a ter seu consumo atualizado
 
 ## Uso
@@ -309,6 +317,7 @@ python -m unittest discover tests
 ## Importância do Consumo de Energia
 
 Em ambientes agrícolas remotos, a eficiência energética é fundamental devido a:
+
 - Limitações de infraestrutura elétrica
 - Dependência de energia solar/baterias
 - Custos operacionais
@@ -333,6 +342,7 @@ python3 test_edge_simulator.py
 ## Licença
 
 Veja o arquivo [LICENSE](LICENSE) para detalhes.
+
 ## 📋 Descrição
 
 Este simulador foi desenvolvido para validar arquiteturas híbridas de edge computing aplicadas ao setor agrícola remoto. Ele simula:
@@ -353,6 +363,7 @@ python3 simulador_agro_edge.py
 ```
 
 A simulação executa por 2 minutos (120 segundos) e gera:
+
 - Dashboard de status em tempo real
 - Testes de caos periódicos
 - Relatório final com KPIs
@@ -361,15 +372,18 @@ A simulação executa por 2 minutos (120 segundos) e gera:
 ### Componentes Simulados
 
 #### 1. Links de Rede
+
 - **Starlink-001**: Primário, 45ms latência, 150 Mbps
 - **4G-Rural-01**: Backup, 85ms latência, 30 Mbps
 - **LoRa-Mesh-01**: Local, 120ms latência, 0.05 Mbps
 
 #### 2. Nós Edge
+
 - **edge-01** e **edge-02**: K3s + MQTT em active-active
 - Monitoramento de CPU, memória e heartbeat
 
 #### 3. Sensores/Atuadores
+
 - Temperatura, umidade, solo, câmeras, colheitadeiras
 - Hash SHA-256 para integridade dos dados
 
@@ -384,6 +398,7 @@ A simulação executa por 2 minutos (120 segundos) e gera:
 ## 🧪 Testes de Caos
 
 O simulador executa testes controlados de:
+
 - **link_failure**: Falha do link primário
 - **node_failure**: Falha de nó edge
 - **traffic_spike**: Pico de tráfego (50 mensagens)
@@ -398,6 +413,7 @@ Cada teste mede o tempo de recuperação (SLA: <5s).
 ## 📦 Saída
 
 O simulador gera `agro_edge_deploy.json` com:
+
 - Configuração completa da arquitetura
 - Status dos componentes
 - KPIs finais
@@ -414,6 +430,7 @@ O simulador gera `agro_edge_deploy.json` com:
 ## 📄 Licença
 
 Ver arquivo LICENSE
+
 # Hybrid Edge Computing Architecture for Remote Agriculture / Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 
 **Complete resilient architecture simulation with network failover, edge orchestration, telemetry, chaos testing, and observability**  
@@ -426,7 +443,9 @@ This simulator models a hybrid connectivity and edge computing architecture desi
 The goal is to validate resilience, low latency, and productivity gains (+30% simulated) in "off-the-map" scenarios where fiber isn't available. (Nota: Esta documentação está principalmente em inglês para acessibilidade global; seções chave em português disponíveis sob solicitação.)
 
 ## 🎯 Key Performance Indicators (KPIs)
+
 This system validates and achieves the following KPIs:
+
 - ✅ **>99.5% Availability** - High availability through network resilience
 - ✅ **<5s Failover Time** - Rapid network failover between Starlink/4G/LoRa
 - ✅ **<50ms Latency** - Low latency communication for real-time control
@@ -468,9 +487,10 @@ This system validates and achieves the following KPIs:
 │ Metrics | Logging | Alerting | Dashboards                       │
 └─────────────────────────────────────────────────────────────────┘
 
-
 ## 🚀 Features
+
 ### 1. **Network Resilience Layer**
+
 - **Multi-network Failover**: Automatic switching between Starlink, 4G, and LoRa
 - **Health Monitoring**: Continuous health checks on all network interfaces
 - **Sub-5s Failover**: Meets strict failover time requirements
@@ -478,6 +498,7 @@ This system validates and achieves the following KPIs:
 - **SD-WAN Híbrido**: Seleção inteligente de links (Starlink primário, 4G failover, LoRa para baixa largura)
 
 ### 2. **Edge Computing with K3s**
+
 - **Lightweight Kubernetes**: K3s cluster orchestration optimized for edge
 - **Workload Management**: Automatic workload distribution across edge nodes
 - **Resource Optimization**: Efficient CPU, memory, and storage allocation
@@ -485,6 +506,7 @@ This system validates and achieves the following KPIs:
 - **Integração NSE3000**: Simulação de QoS por tipo de dado, segmentação VLAN (OT/IT), políticas zero-trust e logging
 
 ### 3. **MQTT Telemetry System**
+
 - **Real-time Data Collection**: Agriculture sensor data (soil, climate, crops)
 - **Message Buffering**: Resilient to network interruptions
 - **Data Validation**: Quality checks on sensor readings
@@ -492,6 +514,7 @@ This system validates and achieves the following KPIs:
 - **Telemetria Multi-Tipo**: Suporte a temperatura, umidade, imagens, atuadores e dados críticos
 
 ### 4. **Chaos Engineering**
+
 - **Network Failure Simulation**: Test failover mechanisms
 - **Node Failure Tests**: Validate cluster resilience
 - **Latency Injection**: Performance under degraded conditions
@@ -500,12 +523,14 @@ This system validates and achieves the following KPIs:
 - **Testes de Caos**: Falha de link, falha de nó, pico de tráfego
 
 ### 5. **Observability & Monitoring**
+
 - **Prometheus Metrics**: Real-time KPI tracking
 - **Grafana Dashboards**: Visual monitoring and alerting
 - **Audit Logging**: Complete system activity logs
 - **Health Checks**: Component status monitoring
 
 ### 6. **Security (NSE3000 & Zero-Trust)**
+
 - **Zero-Trust Architecture**: Never trust, always verify
 - **Role-Based Access Control**: Granular permissions
 - **Session Management**: Secure authentication
@@ -513,6 +538,7 @@ This system validates and achieves the following KPIs:
 - **Audit Trail**: Complete security event logging
 
 ### 7. **Agriculture Data & Validation**
+
 - **Realistic Sensor Data**: Simulated agriculture sensor readings
 - **Crop Growth Modeling**: Multi-stage crop development
 - **Autonomous Harvest Decisions**: AI-driven harvest optimization
@@ -520,11 +546,14 @@ This system validates and achieves the following KPIs:
 - **Inferência Local**: Análise de imagens para colheita com cache resiliente
 
 ## 📦 Installation
+
 ### Prerequisites
+
 - Python 3.10 or higher
 - pip package manager
 
 ### Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/danielnovais-tech/Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto.git
@@ -536,16 +565,19 @@ pip install -e .
 ```
 
 ## 🧪 Testing
+
 This project includes a comprehensive test suite with >80% code coverage to ensure code quality and prevent regressions.
 
 ### Running Tests Locally
 
 Run all tests with verbose output:
+
 ```bash
 pytest tests/ -v
 ```
 
 Run tests for the main simulator:
+
 ```bash
 pytest tests/test_agro_edge.py -v
 ```
@@ -553,6 +585,7 @@ pytest tests/test_agro_edge.py -v
 ### Code Coverage
 
 Check code coverage:
+
 ```bash
 pytest tests/ --cov=agro_edge_simulator --cov-report=html
 ```
@@ -560,6 +593,7 @@ pytest tests/ --cov=agro_edge_simulator --cov-report=html
 This will generate an HTML coverage report in the `htmlcov/` directory. Open `htmlcov/index.html` in your browser to view detailed coverage information.
 
 View coverage in terminal:
+
 ```bash
 pytest tests/ --cov=agro_edge_simulator --cov-report=term-missing
 ```
@@ -567,6 +601,7 @@ pytest tests/ --cov=agro_edge_simulator --cov-report=term-missing
 ### CI/CD Pipeline
 
 The project uses GitHub Actions for continuous integration:
+
 - **Triggers**: Automatic on push to `main` branch and pull requests
 - **Python versions tested**: 3.9, 3.10, 3.11
 - **Test requirements**: All tests must pass before merge
