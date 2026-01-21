@@ -1,0 +1,12 @@
+# Reproducible CI/test dependency pins
+# Generated from the venv used to run tests on 2026-01-21.
+#
+# Usage (CI):
+#   python -m pip install -r requirements-ci.txt
+#
+colorama==0.4.6
+iniconfig==2.3.0
+packaging==26.0
+pluggy==1.6.0
+Pygments==2.19.2
+pytest==9.0.2
