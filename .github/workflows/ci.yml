@@ -36,7 +36,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest -q --junitxml=reports/junit.xml --cov=. --cov-report=xml:reports/coverage.xml --cov-report=term-missing
+          python -m pytest -q --junitxml=reports/junit.xml --cov=simulador_agro_edge --cov=edge_simulator --cov-report=xml:reports/coverage.xml --cov-report=term-missing
 
       - name: Upload test reports (JUnit + coverage)
         if: always()
@@ -46,6 +46,17 @@ jobs:
           path: reports/**
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### Test reports"
+            echo ""
+            echo "- JUnit: reports/junit.xml"
+            echo "- Coverage (XML): reports/coverage.xml"
+            echo "- Artifact: test-reports-${{ runner.os }}-py${{ matrix.python-version }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   tests-windows:
     runs-on: windows-latest
@@ -74,7 +85,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest -q --junitxml=reports/junit.xml --cov=. --cov-report=xml:reports/coverage.xml --cov-report=term-missing
+          python -m pytest -q --junitxml=reports/junit.xml --cov=simulador_agro_edge --cov=edge_simulator --cov-report=xml:reports/coverage.xml --cov-report=term-missing
 
       - name: Upload test reports (JUnit + coverage)
         if: always()
@@ -84,3 +95,15 @@ jobs:
           path: reports/**
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Job summary
+        if: always()
+        shell: pwsh
+        run: |
+          @"
+          ### Test reports
+
+          - JUnit: reports/junit.xml
+          - Coverage (XML): reports/coverage.xml
+          - Artifact: test-reports-${{ runner.os }}-py${{ matrix.python-version }}
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
