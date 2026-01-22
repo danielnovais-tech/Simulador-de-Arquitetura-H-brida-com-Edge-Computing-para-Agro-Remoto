@@ -16,10 +16,48 @@ Este projeto implementa um simulador completo de arquitetura híbrida que demons
 
 ### Pré-requisitos
 
-- Python 3.7 ou superior
-- Nenhuma dependência externa necessária (usa apenas bibliotecas padrão do Python)
+**Python:** 3.8+ (recomendado: 3.9+)
 
-**Nota (Python 3.14+ no Windows):** alguns pacotes opcionais de “introspecção de rede/sistema” (como `netifaces` e `psutil`) ainda podem não ter wheels disponíveis. Por isso, eles são ignorados automaticamente na instalação em Python 3.14+ (via marcadores em `requirements.txt`). Se você precisar dessas funcionalidades, use Python 3.13 ou instale esses pacotes a partir do source.
+**Dependências:** este repositório usa dependências externas (veja `requirements.txt`).
+
+**Nota (Python 3.14+ no Windows):** alguns pacotes opcionais de “introspecção de rede/sistema” (como `netifaces` e `psutil`) ainda podem não ter wheels disponíveis. Por isso, eles são ignorados automaticamente na instalação em Python 3.14+ (via marcadores em `requirements.txt`). Se você precisar dessas funcionalidades, use Python 3.13.
+
+### Instalação
+
+Crie um virtualenv e instale as dependências:
+
+```bash
+python -m venv .venv
+
+# Windows
+.\.venv\Scripts\python -m pip install --upgrade pip
+.\.venv\Scripts\python -m pip install -r requirements.txt
+
+# Linux/macOS
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+**requirements.txt vs requirements-ci.txt**
+
+- `requirements.txt`: dependências “flexíveis” (intervalos de versão) para uso normal.
+- `requirements-ci.txt`: versões *pinadas* para builds reprodutíveis em CI.
+
+### Quick start (simulador_agro_edge.py)
+
+O script `simulador_agro_edge.py` expõe argumentos de linha de comando:
+
+```bash
+# Exemplo rápido (1s), com 5 sensores e 2 nós edge
+python simulador_agro_edge.py --duration 1 --sensors 5 --edges 2 --cloud-prob 0.5
+```
+
+Flags principais:
+
+- `--duration`: duração da simulação em segundos
+- `--sensors`: número de sensores simulados
+- `--edges`: número de nós edge
+- `--cloud-prob`: probabilidade (0.0–1.0) de enviar telemetria para cloud em vez de fila local
 
 ### Execução Básica
 
