@@ -31,8 +31,25 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Prepare test reports directory
+        run: python -c "import os; os.makedirs('reports', exist_ok=True)"
+
       - name: Run tests
-        run: python -m pytest -q
+        run: |
+          python -m pytest -q \
+            --junitxml=reports/junit.xml \
+            --cov=. \
+            --cov-report=xml:reports/coverage.xml \
+            --cov-report=term-missing
+
+      - name: Upload test reports (JUnit + coverage)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ runner.os }}-py${{ matrix.python-version }}
+          path: reports/**
+          if-no-files-found: warn
+          retention-days: 14
 
   tests-windows:
     runs-on: windows-latest
@@ -56,5 +73,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Prepare test reports directory
+        run: python -c "import os; os.makedirs('reports', exist_ok=True)"
+
       - name: Run tests
-        run: python -m pytest -q
+        run: |
+          python -m pytest -q \
+            --junitxml=reports/junit.xml \
+            --cov=. \
+            --cov-report=xml:reports/coverage.xml \
+            --cov-report=term-missing
+
+      - name: Upload test reports (JUnit + coverage)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ runner.os }}-py${{ matrix.python-version }}
+          path: reports/**
+          if-no-files-found: warn
+          retention-days: 14
