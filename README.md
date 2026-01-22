@@ -38,7 +38,7 @@ python -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
-**requirements.txt vs requirements-ci.txt**
+### requirements.txt vs requirements-ci.txt
 
 - `requirements.txt`: dependências “flexíveis” (intervalos de versão) para uso normal.
 - `requirements-ci.txt`: versões *pinadas* para builds reprodutíveis em CI.
@@ -110,7 +110,7 @@ O simulador gera:
 
 ### Exemplo de Saída
 
-```
+```text
 ╔══════════════════════════════════════════════════════════════╗
 ║  SIMULADOR DE ARQUITETURA HÍBRIDA COM EDGE COMPUTING        ║
 ║  PARA AGRICULTURA REMOTA                                     ║
@@ -137,7 +137,7 @@ TESTES DE VALIDAÇÃO
 
 ## 🏗️ Arquitetura do Sistema
 
-```
+```text
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │  Sensores   │────▶│  Edge Nodes │────▶│  Gateways   │────▶┌──────────┐
 │   (IoT)     │     │  (Processo  │     │  (Agregação)│     │  Cloud   │
@@ -209,11 +209,11 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull r
 Para questões ou sugestões, abra uma issue no repositório.
 Simula rede híbrida, edge computing resiliente e testes de validação
 
-## Descrição
+## Descrição (modelo de energia)
 
 Este simulador foi desenvolvido para modelar arquiteturas de edge computing em ambientes agrícolas remotos, onde o consumo de energia é um fator crítico.
 
-## Características
+## Características (energia)
 
 ### EdgeNode
 
@@ -231,7 +231,7 @@ Função que simula o heartbeat de um nó edge e atualiza o consumo de energia c
 
 **Fórmula de cálculo:**
 
-```
+```text
 power_watts = 12.5 + (cpu_usage * 0.2) + (mem_usage * 0.1)
 ```
 
@@ -239,7 +239,7 @@ power_watts = 12.5 + (cpu_usage * 0.2) + (mem_usage * 0.1)
 
 - `node` (EdgeNode): O nó a ter seu consumo atualizado
 
-## Uso
+## Uso (energia)
 
 ```python
 from simulator.edge_node import EdgeNode, simulate_edge_heartbeat
@@ -262,13 +262,15 @@ print(f"Consumo: {node.power_watts}W")  # 25.5W
 
 ```bash
 python example.py
+```
+
 Simula rede híbrida, edge computing resiliente e testes de validação para agricultura remota.
 
-## Descrição
+## Descrição (edge vs cloud)
 
 Este simulador implementa um sistema de edge computing para agricultura remota, permitindo comparar o desempenho entre processamento local (edge) e processamento na nuvem (cloud). O simulador mede o tempo de decisão para inferências locais versus envio para a nuvem.
 
-## Características
+## Características (edge vs cloud)
 
 - **Métricas de Tempo de Decisão Edge**: Mede quanto tempo leva para processar inferência local vs. enviar para nuvem
 - **KPIs Automáticos**: Rastreamento de métricas de desempenho usando média móvel exponencial (EMA)
@@ -276,7 +278,7 @@ Este simulador implementa um sistema de edge computing para agricultura remota, 
 - **Comparação Edge vs Cloud**: Análise de desempenho entre processamento local e remoto
 - **Latência de Rede Simulada**: Simula atrasos de rede realistas para comunicação com a nuvem
 
-## Instalação
+## Instalação (edge vs cloud)
 
 ```bash
 # Clone o repositório
@@ -289,7 +291,7 @@ cd Simulador-de-Arquitetura-H-brida-com-Edge-Computing-para-Agro-Remoto
 pip install -r requirements.txt
 ```
 
-## Uso
+## Uso (edge vs cloud)
 
 ### Execução Rápida
 
@@ -317,9 +319,9 @@ print(f"Tempo total cloud: {result['total_time_ms']:.1f} ms")
 simulator.print_kpis()
 ```
 
-## Exemplo de Saída
+## Exemplo de Saída (edge vs cloud)
 
-```
+```text
 [Edge] Inferência local concluída em 14.7 ms
 [Cloud] Inferência na nuvem concluída em 284.9 ms (latência rede: ~260.3 ms)
 
@@ -346,7 +348,7 @@ def process_edge_inference(self):
     )
 ```
 
-## Testes
+## Testes (edge vs cloud)
 
 ```bash
 python -m unittest discover tests
@@ -368,7 +370,7 @@ python3 test_edge_simulator.py
 
 ## Estrutura do Projeto
 
-```
+```text
 .
 ├── edge_simulator.py       # Módulo principal do simulador
 ├── demo.py                 # Demonstração de uso
@@ -381,7 +383,7 @@ python3 test_edge_simulator.py
 
 Veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## 📋 Descrição
+## 📋 Descrição (arquitetura resiliente SD-WAN/K3s)
 
 Este simulador foi desenvolvido para validar arquiteturas híbridas de edge computing aplicadas ao setor agrícola remoto. Ele simula:
 
@@ -465,11 +467,11 @@ O simulador gera `agro_edge_deploy.json` com:
 4. Testes de caos em ambiente controlado
 5. Medição contínua de KPIs (+30% produtividade)
 
-## 📄 Licença
+## 📄 Licença (simulação avançada)
 
 Ver arquivo LICENSE
 
-# Hybrid Edge Computing Architecture for Remote Agriculture / Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
+## Hybrid Edge Computing Architecture for Remote Agriculture / Simulador de Arquitetura Híbrida com Edge Computing para Agro Remoto
 
 **Complete resilient architecture simulation with network failover, edge orchestration, telemetry, chaos testing, and observability**  
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)  
